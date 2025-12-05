@@ -6,7 +6,7 @@ Please visit [www.mpegh.com](https://mpegh.com) to learn more about MPEG-H Audio
 
 ## Supported architectures
 
-The **mpeg-h-browser-ui** is based on modern Web technologies and will therefore run on nearly any architectures, which supports today's web technologies (HTML5, JavaScript, CSS).
+The **mpeg-h-browser-ui** is based on modern web technologies and will therefore run on nearly any architecture, which supports today's web technologies (HTML5, JavaScript, CSS).
 
 Integration support can be requested directly from [Fraunhofer IIS](https://www.iis.fraunhofer.de/en/ff/amm/broadcast-streaming/mpegh.html).
 
@@ -23,7 +23,7 @@ Find below the basic instructions to build the project.
    $ git clone https://github.com/Fraunhofer-IIS/mpeg-h-browser-ui.git
    $ cd mpeg-h-browser-ui
    ```
-2. (optional, if not done already) Install pnpm using Corepack.
+2. (optional, if not done already) Install pnpm, e.g. using Corepack.
    ```
    $ corepack enable pnpm
    ```
@@ -46,7 +46,7 @@ After the initial build, the command
 
 can be used, to automatically copy all updated built code to the lib folders of all demo apps.
 
-## Example pages
+## Example page
 
 This repository provides following demo example page for the **mpeg-h-browser-ui**:
 
@@ -68,8 +68,9 @@ Contributions may be done through a pull request to the upstream repository.
 
 ## License
 
-Please see the [LICENSE.txt](./LICENSE.txt) file for the terms of use that apply to the software in this repository.
+Please see the [license.txt](./license.txt) file for the terms of use that apply to the software in this repository.
 
 Fraunhofer supports the development of MPEG-H products and services by offering additional software, documentation, and technical advice. In addition, it operates the MPEG-H Trademark Program to ease interoperability testing of end-products. Please visit [www.mpegh.com](https://mpegh.com) for more information.
+
 
 For more information, please contact amm-info@iis.fraunhofer.de
