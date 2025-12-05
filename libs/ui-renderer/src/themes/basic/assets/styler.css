@@ -1,0 +1,210 @@
+/*-----------------------------------------------------------------------------
+Software License for The Fraunhofer FDK MPEG-H Software
+
+Copyright (c) 2025 - 2025 Fraunhofer-Gesellschaft zur Förderung der angewandten
+Forschung e.V. and Contributors
+All rights reserved.
+
+1. INTRODUCTION
+
+The "Fraunhofer FDK MPEG-H Software" is software that implements the ISO/MPEG
+MPEG-H 3D Audio standard for digital audio or related system features. Patent
+licenses for necessary patent claims for the Fraunhofer FDK MPEG-H Software
+(including those of Fraunhofer), for the use in commercial products and
+services, may be obtained from the respective patent owners individually and/or
+from Via LA (www.via-la.com).
+
+Fraunhofer supports the development of MPEG-H products and services by offering
+additional software, documentation, and technical advice. In addition, it
+operates the MPEG-H Trademark Program to ease interoperability testing of end-
+products. Please visit www.mpegh.com for more information.
+
+2. COPYRIGHT LICENSE
+
+Redistribution and use in source and binary forms, with or without modification,
+are permitted without payment of copyright license fees provided that you
+satisfy the following conditions:
+
+* You must retain the complete text of this software license in redistributions
+of the Fraunhofer FDK MPEG-H Software or your modifications thereto in source
+code form.
+
+* You must retain the complete text of this software license in the
+documentation and/or other materials provided with redistributions of
+the Fraunhofer FDK MPEG-H Software or your modifications thereto in binary form.
+You must make available free of charge copies of the complete source code of
+the Fraunhofer FDK MPEG-H Software and your modifications thereto to recipients
+of copies in binary form.
+
+* The name of Fraunhofer may not be used to endorse or promote products derived
+from the Fraunhofer FDK MPEG-H Software without prior written permission.
+
+* You may not charge copyright license fees for anyone to use, copy or
+distribute the Fraunhofer FDK MPEG-H Software or your modifications thereto.
+
+* Your modified versions of the Fraunhofer FDK MPEG-H Software must carry
+prominent notices stating that you changed the software and the date of any
+change. For modified versions of the Fraunhofer FDK MPEG-H Software, the term
+"Fraunhofer FDK MPEG-H Software" must be replaced by the term "Third-Party
+Modified Version of the Fraunhofer FDK MPEG-H Software".
+
+3. No PATENT LICENSE
+
+NO EXPRESS OR IMPLIED LICENSES TO ANY PATENT CLAIMS, including without
+limitation the patents of Fraunhofer, ARE GRANTED BY THIS SOFTWARE LICENSE.
+Fraunhofer provides no warranty of patent non-infringement with respect to this
+software. You may use this Fraunhofer FDK MPEG-H Software or modifications
+thereto only for purposes that are authorized by appropriate patent licenses.
+
+4. DISCLAIMER
+
+This Fraunhofer FDK MPEG-H Software is provided by Fraunhofer on behalf of the
+copyright holders and contributors "AS IS" and WITHOUT ANY EXPRESS OR IMPLIED
+WARRANTIES, including but not limited to the implied warranties of
+merchantability and fitness for a particular purpose. IN NO EVENT SHALL THE
+COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE for any direct, indirect,
+incidental, special, exemplary, or consequential damages, including but not
+limited to procurement of substitute goods or services; loss of use, data, or
+profits, or business interruption, however caused and on any theory of
+liability, whether in contract, strict liability, or tort (including
+negligence), arising in any way out of the use of this software, even if
+advised of the possibility of such damage.
+
+5. CONTACT INFORMATION
+
+Fraunhofer Institute for Integrated Circuits IIS
+Attention: Division Audio and Media Technologies - MPEG-H FDK
+Am Wolfsmantel 33
+91058 Erlangen, Germany
+www.iis.fraunhofer.de/amm
+amm-info@iis.fraunhofer.de
+-----------------------------------------------------------------------------*/
+
+#nga-ui-basic {
+  --nga-ui-basic-accent-color: #00e7ff;
+  background-color: #1d282cd3;
+  font-family: Arial, Helvetica, sans-serif;
+  height: max-content;
+  padding: 1em;
+  min-width: 12em;
+  width: 50dvw;
+  max-width: min(36rem, calc(100% - 2em));
+  max-height: calc(100% - 2em);
+  border-radius: 1em;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+#nga-ui-basic .headerlabel {
+  font-weight: 500;
+  font-size: 120%;
+  color: white;
+  text-align: left;
+  margin-bottom: 10px;
+  margin-top: 0em;
+}
+
+#nga-ui-basic .presets .headerlabel {
+  font-size: 140%;
+}
+
+#nga-ui-basic .interactivityitem {
+  margin-top: 0.5em;
+  border: solid 2px grey;
+  color: white;
+  display: flex;
+  padding: 0.75em;
+  gap: 0.65em 1em;
+  border-radius: 0.5em;
+  justify-content: flex-start;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+#nga-ui-basic .interactivitylabel {
+  min-width: 6em;
+  word-break: break-word;
+  flex: 1 0 0;
+}
+
+#nga-ui-basic .presetlabel,
+#nga-ui-basic .optionlabel {
+  color: white;
+  display: flex;
+  gap: 0.25em;
+  align-items: center;
+  cursor: pointer;
+}
+
+#nga-ui-basic .presetlabel input[type="radio"],
+#nga-ui-basic .optionlabel input[type="radio"] {
+  -webkit-appearance: none;
+  appearance: none;
+  margin: 0;
+  margin-right: 0.15em;
+  min-height: 1.25em;
+  min-width: 1.25em;
+  display: grid;
+  place-content: center;
+  border: 0.15em solid white;
+  border-radius: 50%;
+  scroll-margin: 5em;
+}
+
+#nga-ui-basic .presetlabel input[type="radio"]:checked::before,
+#nga-ui-basic .optionlabel input[type="radio"]:checked::before {
+  content: "";
+  min-width: 0.65em;
+  min-height: 0.65em;
+  border-radius: 50%;
+  background-color: var(--nga-ui-basic-accent-color);
+}
+
+#nga-ui-basic .object {
+  margin-top: 1em;
+}
+
+.slider {
+  -webkit-appearance: none;
+  appearance: none;
+  outline: none;
+  min-width: 8rem;
+  max-width: 16rem;
+  height: 0.5em;
+  flex: 2 0 0;
+  background-color: #dadada;
+  border-radius: 0.325em;
+}
+
+.slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  background-color: var(--nga-ui-basic-accent-color);
+  width: 1.5em;
+  height: 1.5em;
+  cursor: pointer;
+  border-radius: 50%;
+}
+
+.slider::-moz-range-thumb {
+  background-color: var(--nga-ui-basic-accent-color);
+  width: 1.5em;
+  height: 1.5em;
+  cursor: pointer;
+  border-radius: 50%;
+}
+
+.interactivityitem:has(:focus-visible),
+.interactivityitem:has(.basic-focused) {
+  outline: 3px solid white !important;
+  border-color: white !important;
+}
+
+.audioobjects:has(.object) {
+  margin-top: 1em;
+  border-top: 2px solid white;
+}
+
+*:focus-visible {
+  outline: none;
+}

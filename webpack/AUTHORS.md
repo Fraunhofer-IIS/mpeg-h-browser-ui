@@ -1,0 +1,10 @@
+- Aleksandr Alekseev, Fraunhofer IIS
+- [Benjamin Cappell](https://github.com/bcappell-iis), Fraunhofer IIS
+- [Bernd Czelhan](https://github.com/bczelhan-iis), Fraunhofer IIS
+- [Moritz Fuchs](https://github.com/mfuchs-iis), Fraunhofer IIS
+- Jochen Issing, Fraunhofer IIS
+- Oliver Major, Fraunhofer IIS
+- Partha Pratim Nandi, Fraunhofer IIS
+- Dennis Salzner, Fraunhofer IIS
+- Ziad Shaban, Fraunhofer IIS
+- Julian Zebelein, Fraunhofer IIS

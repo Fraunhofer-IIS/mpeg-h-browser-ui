@@ -1,0 +1,695 @@
+/*-----------------------------------------------------------------------------
+Software License for The Fraunhofer FDK MPEG-H Software
+
+Copyright (c) 2025 - 2025 Fraunhofer-Gesellschaft zur Förderung der angewandten
+Forschung e.V. and Contributors
+All rights reserved.
+
+1. INTRODUCTION
+
+The "Fraunhofer FDK MPEG-H Software" is software that implements the ISO/MPEG
+MPEG-H 3D Audio standard for digital audio or related system features. Patent
+licenses for necessary patent claims for the Fraunhofer FDK MPEG-H Software
+(including those of Fraunhofer), for the use in commercial products and
+services, may be obtained from the respective patent owners individually and/or
+from Via LA (www.via-la.com).
+
+Fraunhofer supports the development of MPEG-H products and services by offering
+additional software, documentation, and technical advice. In addition, it
+operates the MPEG-H Trademark Program to ease interoperability testing of end-
+products. Please visit www.mpegh.com for more information.
+
+2. COPYRIGHT LICENSE
+
+Redistribution and use in source and binary forms, with or without modification,
+are permitted without payment of copyright license fees provided that you
+satisfy the following conditions:
+
+* You must retain the complete text of this software license in redistributions
+of the Fraunhofer FDK MPEG-H Software or your modifications thereto in source
+code form.
+
+* You must retain the complete text of this software license in the
+documentation and/or other materials provided with redistributions of
+the Fraunhofer FDK MPEG-H Software or your modifications thereto in binary form.
+You must make available free of charge copies of the complete source code of
+the Fraunhofer FDK MPEG-H Software and your modifications thereto to recipients
+of copies in binary form.
+
+* The name of Fraunhofer may not be used to endorse or promote products derived
+from the Fraunhofer FDK MPEG-H Software without prior written permission.
+
+* You may not charge copyright license fees for anyone to use, copy or
+distribute the Fraunhofer FDK MPEG-H Software or your modifications thereto.
+
+* Your modified versions of the Fraunhofer FDK MPEG-H Software must carry
+prominent notices stating that you changed the software and the date of any
+change. For modified versions of the Fraunhofer FDK MPEG-H Software, the term
+"Fraunhofer FDK MPEG-H Software" must be replaced by the term "Third-Party
+Modified Version of the Fraunhofer FDK MPEG-H Software".
+
+3. No PATENT LICENSE
+
+NO EXPRESS OR IMPLIED LICENSES TO ANY PATENT CLAIMS, including without
+limitation the patents of Fraunhofer, ARE GRANTED BY THIS SOFTWARE LICENSE.
+Fraunhofer provides no warranty of patent non-infringement with respect to this
+software. You may use this Fraunhofer FDK MPEG-H Software or modifications
+thereto only for purposes that are authorized by appropriate patent licenses.
+
+4. DISCLAIMER
+
+This Fraunhofer FDK MPEG-H Software is provided by Fraunhofer on behalf of the
+copyright holders and contributors "AS IS" and WITHOUT ANY EXPRESS OR IMPLIED
+WARRANTIES, including but not limited to the implied warranties of
+merchantability and fitness for a particular purpose. IN NO EVENT SHALL THE
+COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE for any direct, indirect,
+incidental, special, exemplary, or consequential damages, including but not
+limited to procurement of substitute goods or services; loss of use, data, or
+profits, or business interruption, however caused and on any theory of
+liability, whether in contract, strict liability, or tort (including
+negligence), arising in any way out of the use of this software, even if
+advised of the possibility of such damage.
+
+5. CONTACT INFORMATION
+
+Fraunhofer Institute for Integrated Circuits IIS
+Attention: Division Audio and Media Technologies - MPEG-H FDK
+Am Wolfsmantel 33
+91058 Erlangen, Germany
+www.iis.fraunhofer.de/amm
+amm-info@iis.fraunhofer.de
+-----------------------------------------------------------------------------*/
+
+:root {
+  /* color */
+  --nga-ui-extended-primary-color: rgba(75, 80, 80, 0.9);
+  --nga-ui-extended-secondary-color: white;
+  --nga-ui-extended-text-color: var(--nga-ui-extended-secondary-color);
+  --nga-ui-extended-text-hover-color: var(--nga-ui-extended-text-color);
+  --nga-ui-extended-text-active-color: var(--nga-ui-extended-text-color);
+  --nga-ui-extended-btn-bg-color: rgb(44, 48, 48);
+  --nga-ui-extended-btn-bg-active-color: rgb(28, 30, 30);
+  --nga-ui-extended-btn-bg-hover-color: rgb(0, 0, 0);
+
+  /* font */
+  --nga-ui-extended-font-family: "Tahoma", "Arial", sans-serif;
+  --nga-ui-extended-font-weight: 400;
+
+  /* positioning & sizing */
+  --nga-ui-extended-max-total-height: 30em;
+  --nga-ui-extended-element-height: 1.1em;
+  --nga-ui-extended-font-size: 1em;
+  --nga-ui-extended-element-width: 200px;
+  --nga-ui-extended-element-padding-vertical: 1em;
+  --nga-ui-extended-element-padding-horizontal: 1.2em;
+  --nga-ui-extended-element-margin: 0.75em;
+  --nga-ui-extended-element-inner-margin-ratio: 0.5;
+  --nga-ui-extended-border-radius: 0.5em;
+  --nga-ui-extended-overlay-z-index: 51;
+
+  /* slider */
+  --nga-ui-extended-slider-flex-size: 1;
+  --nga-ui-extended-slider-thumb-size: 1.5em;
+  --nga-ui-extended-slider-bar-height: 0.4em;
+  --nga-ui-extended-slider-width: 16em;
+}
+
+/*
+###########################
+GLOBAL SETTINGS
+###########################
+*/
+
+/* root settings */
+.nga-ui-extended {
+  -webkit-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  font-family: var(--nga-ui-extended-font-family);
+  font-weight: var(--nga-ui-extended-font-weight);
+  z-index: var(--nga-ui-extended-overlay-z-index);
+  box-sizing: border-box;
+  color: var(--nga-ui-extended-secondary-color);
+  flex-grow: 1;
+
+  /* internal variables for height calculation */
+  --nga-ui-extended-menu-bar-height: calc(
+    3 * var(--nga-ui-extended-element-margin) + 2 *
+      var(--nga-ui-extended-element-padding-vertical) + 2 *
+      var(--nga-ui-extended-element-height)
+  );
+  --nga-ui-extended-max-menu-height: calc(
+    var(--nga-ui-extended-max-total-height) -
+      var(--nga-ui-extended-element-margin) -
+      var(--nga-ui-extended-menu-bar-height)
+  );
+}
+
+.hidden {
+  display: none;
+}
+
+.nga-ui-extended .capitalize p::first-letter,
+.nga-ui-extended .capitalize::first-letter {
+  text-transform: uppercase;
+}
+
+/* disabled elements */
+.nga-ui-extended .disabled {
+  color: grey;
+  cursor: unset;
+}
+
+.nga-ui-extended .disabled::after {
+  color: grey !important;
+}
+
+.nga-ui-extended .disabled img {
+  filter: brightness(50%);
+}
+
+.nga-ui-extended > div {
+  flex-direction: column;
+}
+
+/* focus and nav controller */
+.focused_navctrl_0:focus,
+.focused_navctrl_0:focus-visible,
+.focused_navctrl_0:focus.slider_and_label_container .slidercontainer,
+.focused_navctrl_0:focus-visible.slider_and_label_container .slidercontainer {
+  box-shadow: -0.04em -0.04em 0.55em rgba(255, 255, 255, 0.7);
+  outline: none !important;
+}
+
+.focused_navctrl_0,
+.focused_navctrl_0.slider_and_label_container .slidercontainer {
+  background-color: black !important;
+  box-shadow: -0.04em -0.04em 0.55em rgba(230, 230, 230, 0.6);
+}
+
+.focused_navctrl_0.slider_and_label_container {
+  color: unset !important;
+  box-shadow: unset !important;
+  outline: unset !important;
+  background-color: unset !important;
+}
+
+img {
+  height: 1em;
+  width: 1em;
+}
+
+.nga-ui-extended .single-item-selection {
+  box-sizing: border-box;
+  position: absolute;
+  top: 0;
+  background-color: var(--nga-ui-extended-primary-color);
+  border-radius: calc(
+    var(--nga-ui-extended-border-radius) + var(--nga-ui-extended-element-margin)
+  );
+}
+
+/* scroll bars */
+.nga-ui-extended *::-webkit-scrollbar {
+  width: var(--nga-ui-extended-slider-bar-height);
+  height: var(--nga-ui-extended-slider-bar-height);
+}
+
+@-moz-document url-prefix() {
+  .nga-ui-extended * {
+    scrollbar-width: thin;
+    scrollbar-color: lightgray transparent;
+  }
+}
+
+.nga-ui-extended *::-webkit-scrollbar-thumb {
+  background: lightgray;
+  border-radius: var(--nga-ui-extended-border-radius);
+}
+
+.nga-ui-extended *::-webkit-scrollbar-track-piece:vertical {
+  margin-top: calc(var(--nga-ui-extended-element-margin));
+  margin-bottom: calc(var(--nga-ui-extended-element-margin));
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: var(--nga-ui-extended-border-radius);
+}
+
+.nga-ui-extended *::-webkit-scrollbar-track-piece:horizontal {
+  margin-left: calc(var(--nga-ui-extended-element-margin));
+  margin-right: calc(var(--nga-ui-extended-element-margin));
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: var(--nga-ui-extended-border-radius);
+}
+
+.nga-ui-extended *::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/*
+###########################
+BUTTONS
+###########################
+*/
+
+.nga-ui-extended button {
+  box-sizing: content-box;
+  min-width: 8em;
+  width: calc(
+    25dvw - 2 * var(--nga-ui-extended-element-padding-horizontal) - 2 *
+      var(--nga-ui-extended-element-margin)
+  );
+  max-width: var(--nga-ui-extended-element-width);
+  height: var(--nga-ui-extended-element-height);
+  color: var(--nga-ui-extended-secondary-color);
+  background-color: var(--nga-ui-extended-btn-bg-color);
+  font-size: var(--nga-ui-extended-font-size);
+  padding: var(--nga-ui-extended-element-padding-vertical)
+    var(--nga-ui-extended-element-padding-horizontal)
+    var(--nga-ui-extended-element-padding-vertical)
+    var(--nga-ui-extended-element-padding-horizontal);
+  border-radius: var(--nga-ui-extended-border-radius);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  line-break: normal;
+  border: none;
+  margin: var(--nga-ui-extended-element-margin);
+  scroll-margin: var(--nga-ui-extended-element-margin);
+  text-align: left;
+  cursor: pointer;
+  font-family: var(--nga-ui-extended-font-family);
+  font-weight: var(--nga-ui-extended-font-weight);
+}
+
+.nga-ui-extended button:not(.disabled):hover {
+  background-color: var(--nga-ui-extended-btn-bg-hover-color);
+  color: var(--nga-ui-extended-text-hover-color);
+}
+
+.nga-ui-extended button.btn-selection.active:after {
+  content: " ";
+  display: inline-block;
+  width: 0.8em;
+  height: 0.8em;
+  min-width: 0.8em;
+  margin-left: 0.5em;
+  background: white;
+  border-radius: 50%;
+  box-sizing: border-box;
+  margin-top: auto;
+  margin-bottom: auto;
+}
+
+.nga-ui-extended button.btn-dropdown.active:not(.disabled),
+.nga-ui-extended button.btn-dropup.active:not(.disabled),
+.nga-ui-extended button.btn-action.active:not(.disabled) {
+  background-color: var(--nga-ui-extended-btn-bg-active-color);
+  color: var(--nga-ui-extended-text-active-color);
+}
+
+.nga-ui-extended button.btn-dropup:after,
+.nga-ui-extended button.btn-dropdown:after {
+  color: var(--nga-ui-extended-secondary-color);
+  border-style: solid;
+  content: "";
+  display: inline-block;
+  vertical-align: top;
+  border-radius: 1px;
+  border-left: 0.5em solid transparent;
+  border-right: 0.5em solid transparent;
+  border-bottom: 0.7em solid;
+  border-top: 0 solid transparent;
+  margin-left: 0.5em;
+}
+
+.nga-ui-extended button.btn-dropdown:after {
+  transform: rotate(180deg);
+}
+
+/*
+###########################
+MENU BAR SETTINGS
+###########################
+*/
+
+.nga-ui-extended .menubar {
+  position: relative;
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  box-sizing: border-box;
+  padding: var(--nga-ui-extended-element-margin);
+  gap: var(--nga-ui-extended-element-margin);
+  background-color: var(--nga-ui-extended-primary-color);
+  border-radius: calc(
+    var(--nga-ui-extended-border-radius) + var(--nga-ui-extended-element-margin)
+  );
+  list-style-type: none;
+}
+
+/* no margins in main menu */
+.nga-ui-extended .menubar > li > button {
+  margin: 0;
+}
+
+.nga-ui-extended .menubar > li > h2 {
+  box-sizing: border-box;
+  min-width: calc(8em + 2 * var(--nga-ui-extended-element-padding-horizontal));
+  width: calc(25dvw - 2 * var(--nga-ui-extended-element-margin));
+  max-width: calc(
+    var(--nga-ui-extended-element-width) + 2 *
+      var(--nga-ui-extended-element-padding-horizontal)
+  );
+  text-align: left;
+  color: var(--nga-ui-extended-secondary-color);
+  margin-top: 0;
+  padding-left: calc(var(--nga-ui-extended-border-radius) * 0.618);
+  padding-right: calc(var(--nga-ui-extended-border-radius) * 0.618);
+  color: var(--nga-ui-extended-secondary-color);
+  height: var(--nga-ui-extended-element-height);
+  font-size: var(--nga-ui-extended-font-size);
+  font-weight: 700;
+  margin-bottom: var(--nga-ui-extended-element-margin);
+}
+
+.nga-ui-extended .menubar > li > button.advanced {
+  min-width: 0;
+  height: calc(
+    var(--nga-ui-extended-element-height) +
+      var(--nga-ui-extended-element-padding-vertical)
+  );
+  width: calc(
+    var(--nga-ui-extended-element-height) +
+      var(--nga-ui-extended-element-padding-vertical)
+  );
+  padding: calc(0.5 * var(--nga-ui-extended-element-padding-vertical));
+  align-self: flex-end;
+  justify-content: center;
+  scroll-margin: var(--nga-ui-extended-element-margin);
+}
+
+.nga-ui-extended .menubar *:has(button.advanced) {
+  margin-left: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: flex-end;
+}
+
+.nga-ui-extended .menubar *:has(button.advanced) > h2 {
+  display: none;
+}
+
+/*
+###########################
+POPUPS
+###########################
+*/
+
+.nga-ui-extended .popup {
+  box-sizing: border-box;
+  position: absolute;
+  top: 0;
+  max-height: var(--nga-ui-extended-max-menu-height);
+  background-color: var(--nga-ui-extended-primary-color);
+  border-radius: calc(
+    var(--nga-ui-extended-border-radius) + var(--nga-ui-extended-element-margin)
+  );
+}
+
+.nga-ui-extended .popup:not(.advanced_menu) {
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.nga-ui-extended .submenu_l1 {
+  transform: translateY(calc(-100% - var(--nga-ui-extended-element-margin)))
+    translateX(calc(0px - var(--nga-ui-extended-element-margin)));
+}
+
+.nga-ui-extended .submenu_l1.advanced_menu {
+  transform: translateY(calc(-100% - var(--nga-ui-extended-element-margin)))
+    translateX(calc(0px + var(--nga-ui-extended-element-margin)));
+  width: 20em;
+  --nga-ui-extended-advanced-max-btns: 0;
+  --nga-ui-extended-advanced-max-sliders: 1;
+  --nga-ui-extended-advanced-interactivity-height: calc(
+    (
+        1 + var(--nga-ui-extended-advanced-max-btns) + 1.5 *
+          var(--nga-ui-extended-advanced-max-sliders)
+      ) *
+      var(--nga-ui-extended-element-margin) +
+      (
+        2 * var(--nga-ui-extended-advanced-max-btns) + 2 *
+          var(--nga-ui-extended-advanced-max-sliders)
+      ) *
+      var(--nga-ui-extended-element-padding-vertical) +
+      (
+        1 * var(--nga-ui-extended-advanced-max-btns) + 2 *
+          var(--nga-ui-extended-advanced-max-sliders)
+      ) *
+      var(--nga-ui-extended-element-height)
+  );
+  --nga-ui-extended-advanced-rest-height: calc(
+    4 * var(--nga-ui-extended-element-margin) + 4 *
+      var(--nga-ui-extended-element-padding-vertical) + 2 *
+      var(--nga-ui-extended-element-height)
+  );
+  --nga-ui-extended-advanced-total-height: calc(
+    var(--nga-ui-extended-advanced-interactivity-height) +
+      var(--nga-ui-extended-advanced-rest-height)
+  );
+  max-height: min(
+    var(--nga-ui-extended-advanced-total-height),
+    var(--nga-ui-extended-max-menu-height)
+  );
+}
+
+/*
+###########################
+SLIDERS
+###########################
+*/
+
+.slider_and_label_container {
+  scroll-margin: var(--nga-ui-extended-element-margin);
+}
+
+.slider_and_label_container p {
+  color: var(--nga-ui-extended-secondary-color);
+  height: var(--nga-ui-extended-element-height);
+  font-size: var(--nga-ui-extended-font-size);
+  text-align: center;
+  margin: var(--nga-ui-extended-element-margin);
+  margin-bottom: calc(0.5 * var(--nga-ui-extended-element-margin));
+  scroll-margin: var(--nga-ui-extended-element-margin);
+}
+
+.nga-ui-extended .slidercontainer {
+  justify-content: center;
+  position: relative;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  height: var(--nga-ui-extended-element-height);
+  background-color: transparent;
+  font-size: var(--nga-ui-extended-font-size);
+  color: var(--nga-ui-extended-secondary-color);
+  margin: var(--nga-ui-extended-element-margin);
+  margin-top: calc(0.5 * var(--nga-ui-extended-element-margin));
+  scroll-margin: var(--nga-ui-extended-element-margin);
+  scroll-margin-top: calc(
+    1.5 * var(--nga-ui-extended-element-margin) +
+      var(--nga-ui-extended-element-height)
+  );
+  border-radius: var(--nga-ui-extended-border-radius);
+  padding: var(--nga-ui-extended-element-padding-vertical)
+    calc(var(--nga-ui-extended-element-padding-horizontal) * 0.25);
+}
+
+.nga-ui-extended
+  .slider_and_label_container
+  .slidercontainer
+  button.sliderbutton {
+  display: flex;
+  border: 0px;
+  min-width: 1em;
+  width: 1em;
+  height: 1em;
+  padding: 0.25em;
+  margin: 0;
+  justify-content: center;
+  background-color: unset;
+  cursor: pointer;
+}
+
+/* Slider Thumb (Dot) */
+.nga-ui-extended .slidercontainer input::-webkit-slider-thumb {
+  margin-top: calc(
+    -0.5 * var(--nga-ui-extended-slider-thumb-size) + 0.5 *
+      var(--nga-ui-extended-slider-bar-height)
+  );
+  -webkit-appearance: none;
+  appearance: none;
+  border-radius: 50%;
+  height: var(--nga-ui-extended-slider-thumb-size);
+  width: var(--nga-ui-extended-slider-thumb-size);
+  position: relative;
+  background: var(--nga-ui-extended-secondary-color);
+  border: none;
+}
+
+.nga-ui-extended .slidercontainer input::-moz-range-thumb {
+  margin-top: calc(
+    -0.5 * var(--nga-ui-extended-slider-thumb-size) + 0.5 *
+      var(--nga-ui-extended-slider-bar-height)
+  );
+  -webkit-appearance: none;
+  appearance: none;
+  border-radius: 50%;
+  height: var(--nga-ui-extended-slider-thumb-size);
+  width: var(--nga-ui-extended-slider-thumb-size);
+  position: relative;
+  background: var(--nga-ui-extended-secondary-color);
+  border: none;
+}
+
+/* Slider Track (Line) */
+.nga-ui-extended .slidercontainer input::-webkit-slider-runnable-track {
+  box-sizing: border-box;
+  background: lightgray;
+  height: var(--nga-ui-extended-slider-bar-height);
+  border-radius: calc(var(--nga-ui-extended-slider-bar-height) * 0.5);
+}
+
+.nga-ui-extended .slidercontainer input::-moz-range-track {
+  box-sizing: border-box;
+  background: lightgray;
+  height: var(--nga-ui-extended-slider-bar-height);
+  border-radius: calc(var(--nga-ui-extended-slider-bar-height) * 0.5);
+}
+
+.nga-ui-extended .slidercontainer input {
+  min-width: 7.5em;
+  height: 100%;
+  flex-grow: var(--nga-ui-extended-slider-flex-size);
+  background-color: transparent;
+  margin: calc(
+      var(--nga-ui-extended-element-inner-margin-ratio) *
+        var(--nga-ui-extended-element-margin)
+    )
+    var(--nga-ui-extended-element-margin);
+  -webkit-appearance: none;
+  appearance: none;
+  cursor: pointer;
+  width: var(--nga-ui-extended-slider-width);
+}
+
+/* Main Prominences */
+.nga-ui-extended .main_prominences .slidercontainer {
+  min-width: calc(
+    7em + var(--nga-ui-extended-element-padding-horizontal) + 2em
+  );
+  width: calc(
+    25dvw - 2 * var(--nga-ui-extended-element-padding-horizontal) - 2 *
+      var(--nga-ui-extended-element-margin) + 1.5 *
+      var(--nga-ui-extended-element-padding-horizontal) + 2em
+  );
+  max-width: calc(
+    var(--nga-ui-extended-element-width) + 1.5 *
+      var(--nga-ui-extended-element-padding-horizontal) + 2em
+  );
+}
+
+/*
+###########################
+ADVANCED MENU
+###########################
+*/
+.nga-ui-extended .advanced_menu {
+  padding: var(--nga-ui-extended-element-margin);
+}
+
+.nga-ui-extended .advanced_menu .navbar {
+  font-weight: 700;
+  display: flex;
+  flex-direction: row;
+  margin-bottom: var(--nga-ui-extended-element-margin);
+  scroll-margin: var(--nga-ui-extended-element-margin);
+  align-items: center;
+  align-content: center;
+  justify-content: center;
+  border-radius: var(--nga-ui-extended-border-radius);
+  height: calc(
+    2 * var(--nga-ui-extended-element-padding-vertical) +
+      var(--nga-ui-extended-element-height)
+  );
+}
+
+.nga-ui-extended .advanced_menu .navbar button.navbtn::after {
+  border-style: solid;
+  content: "";
+  display: inline-block;
+  transform: translateY(0.25em) rotate(-90deg);
+  vertical-align: top;
+  border-radius: 1px;
+  border-left: 0.5em solid transparent;
+  border-right: 0.5em solid transparent;
+  border-bottom: 0.7em solid;
+  border-top: 0 solid transparent;
+}
+
+.nga-ui-extended .advanced_menu .navbar button.navbtn.right::after {
+  transform: translateY(0.25em) rotate(90deg);
+}
+
+.nga-ui-extended .advanced_menu .navbar button.navbtn.right {
+  text-align: right;
+}
+
+.nga-ui-extended .advanced_menu .navbar button.navbtn {
+  margin: 0;
+  display: block;
+  height: 100%;
+  flex-grow: 1;
+  box-sizing: border-box;
+  color: var(--nga-ui-extended-secondary-color);
+  min-width: 0;
+  width: unset;
+  background-color: unset;
+}
+
+.nga-ui-extended .advanced_menu .advanced_interactivity {
+  height: var(--nga-ui-extended-advanced-interactivity-height);
+  max-height: calc(
+    var(--nga-ui-extended-max-menu-height) -
+      var(--nga-ui-extended-advanced-rest-height)
+  );
+  overflow-y: auto;
+  overflow-x: hidden;
+  background-color: rgba(255, 255, 255, 0.13);
+  border-radius: calc(
+    var(--nga-ui-extended-border-radius) + var(--nga-ui-extended-element-margin)
+  );
+  margin-bottom: var(--nga-ui-extended-element-margin);
+}
+
+.nga-ui-extended .advanced_menu .advanced_interactivity button {
+  width: calc(
+    100% - 2 * var(--nga-ui-extended-element-margin) - 2 *
+      var(--nga-ui-extended-element-padding-horizontal)
+  );
+  max-width: unset;
+}
+
+.nga-ui-extended .advanced_menu .advanced_selection {
+  position: fixed;
+  right: calc(100% + var(--nga-ui-extended-element-margin));
+}
+
+.nga-ui-extended .advanced_menu .reset_button {
+  width: calc(100% - 2 * var(--nga-ui-extended-element-padding-horizontal));
+  max-width: unset;
+  margin: 0;
+  justify-content: center;
+}

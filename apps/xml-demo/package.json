@@ -1,0 +1,25 @@
+{
+  "name": "@wmt/mpeg-h-browser-ui-xml-demo",
+  "version": "2.0.0",
+  "description": "MPEG-H Browser UI Xml Demo",
+  "homepage": "https://github.com/Fraunhofer-IIS/mpeg-h-browser-ui",
+  "bugs": "https://github.com/Fraunhofer-IIS/mpeg-h-browser-ui/issues",
+  "license": "SEE LICENSE IN license.txt",
+  "author": {
+    "name": "Fraunhofer IIS",
+    "email": "amm-info@iis.fraunhofer.de"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Fraunhofer-IIS/mpeg-h-browser-ui.git"
+  },
+  "main": "index.html",
+  "scripts": {},
+  "dependencies": {},
+  "devDependencies": {},
+  "engines": {
+    "node": ">=20",
+    "pnpm": ">=8"
+  },
+  "private": true
+}

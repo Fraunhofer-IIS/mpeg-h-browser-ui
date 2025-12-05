@@ -1,0 +1,155 @@
+/*-----------------------------------------------------------------------------
+Software License for The Fraunhofer FDK MPEG-H Software
+
+Copyright (c) 2025 - 2025 Fraunhofer-Gesellschaft zur Förderung der angewandten
+Forschung e.V. and Contributors
+All rights reserved.
+
+1. INTRODUCTION
+
+The "Fraunhofer FDK MPEG-H Software" is software that implements the ISO/MPEG
+MPEG-H 3D Audio standard for digital audio or related system features. Patent
+licenses for necessary patent claims for the Fraunhofer FDK MPEG-H Software
+(including those of Fraunhofer), for the use in commercial products and
+services, may be obtained from the respective patent owners individually and/or
+from Via LA (www.via-la.com).
+
+Fraunhofer supports the development of MPEG-H products and services by offering
+additional software, documentation, and technical advice. In addition, it
+operates the MPEG-H Trademark Program to ease interoperability testing of end-
+products. Please visit www.mpegh.com for more information.
+
+2. COPYRIGHT LICENSE
+
+Redistribution and use in source and binary forms, with or without modification,
+are permitted without payment of copyright license fees provided that you
+satisfy the following conditions:
+
+* You must retain the complete text of this software license in redistributions
+of the Fraunhofer FDK MPEG-H Software or your modifications thereto in source
+code form.
+
+* You must retain the complete text of this software license in the
+documentation and/or other materials provided with redistributions of
+the Fraunhofer FDK MPEG-H Software or your modifications thereto in binary form.
+You must make available free of charge copies of the complete source code of
+the Fraunhofer FDK MPEG-H Software and your modifications thereto to recipients
+of copies in binary form.
+
+* The name of Fraunhofer may not be used to endorse or promote products derived
+from the Fraunhofer FDK MPEG-H Software without prior written permission.
+
+* You may not charge copyright license fees for anyone to use, copy or
+distribute the Fraunhofer FDK MPEG-H Software or your modifications thereto.
+
+* Your modified versions of the Fraunhofer FDK MPEG-H Software must carry
+prominent notices stating that you changed the software and the date of any
+change. For modified versions of the Fraunhofer FDK MPEG-H Software, the term
+"Fraunhofer FDK MPEG-H Software" must be replaced by the term "Third-Party
+Modified Version of the Fraunhofer FDK MPEG-H Software".
+
+3. No PATENT LICENSE
+
+NO EXPRESS OR IMPLIED LICENSES TO ANY PATENT CLAIMS, including without
+limitation the patents of Fraunhofer, ARE GRANTED BY THIS SOFTWARE LICENSE.
+Fraunhofer provides no warranty of patent non-infringement with respect to this
+software. You may use this Fraunhofer FDK MPEG-H Software or modifications
+thereto only for purposes that are authorized by appropriate patent licenses.
+
+4. DISCLAIMER
+
+This Fraunhofer FDK MPEG-H Software is provided by Fraunhofer on behalf of the
+copyright holders and contributors "AS IS" and WITHOUT ANY EXPRESS OR IMPLIED
+WARRANTIES, including but not limited to the implied warranties of
+merchantability and fitness for a particular purpose. IN NO EVENT SHALL THE
+COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE for any direct, indirect,
+incidental, special, exemplary, or consequential damages, including but not
+limited to procurement of substitute goods or services; loss of use, data, or
+profits, or business interruption, however caused and on any theory of
+liability, whether in contract, strict liability, or tort (including
+negligence), arising in any way out of the use of this software, even if
+advised of the possibility of such damage.
+
+5. CONTACT INFORMATION
+
+Fraunhofer Institute for Integrated Circuits IIS
+Attention: Division Audio and Media Technologies - MPEG-H FDK
+Am Wolfsmantel 33
+91058 Erlangen, Germany
+www.iis.fraunhofer.de/amm
+amm-info@iis.fraunhofer.de
+-----------------------------------------------------------------------------*/
+
+/* example style guide */
+:root {
+    --styleguide-ulta-dark-color: 5, 1, 0;
+    --styleguide-dark-color: 5, 30, 60;
+    --styleguide-mid-dark-color: 10, 30, 60;
+    --styleguide-background-color: 45, 60, 120;
+    --styleguide-background-opacity: 0.8;
+    --styleguide-accent-color: 150, 200, 250;
+    --styleguide-light-color: 250, 249, 255;
+    --styleguide-font-family: "Trebuchet MS", "sans serif";
+    --styleguide-font-weight: 300;
+    --styleguide-margin: 0.7em;
+    --styleguide-element-height: 17px;
+}
+
+/* basic theme example customization */
+#nga-ui-basic { 
+    background-color: rgba(var(--styleguide-background-color), var(--styleguide-background-opacity));
+    font-family: var(--styleguide-font-family);
+    font-weight: var(--styleguide-font-weight);
+    --nga-ui-basic-accent-color: rgb(var(--styleguide-accent-color));
+}
+
+/* extended theme example customization */
+.nga-ui-extended {
+
+    /* COLOR */
+    /* primary color: background */
+    --nga-ui-extended-primary-color: rgba(var(--styleguide-background-color), var(--styleguide-background-opacity));
+    --nga-ui-extended-secondary-color: rgb(var(--styleguide-light-color));
+    /* text colors for different states */
+    --nga-ui-extended-text-color: rgb(var(--styleguide-light-color));
+    --nga-ui-extended-text-hover-color: rgb(var(--styleguide-light-color));
+    --nga-ui-extended-text-active-color: rgb(var(--styleguide-light-color));
+    /* button colors for different states */
+    --nga-ui-extended-btn-bg-color: rgb(var(--styleguide-mid-dark-color));
+    --nga-ui-extended-btn-bg-active-color: rgb(var(--styleguide-dark-color));
+    --nga-ui-extended-btn-bg-hover-color: rgb(var(--styleguide-ulta-dark-color));
+
+    /* FONT */
+    --nga-ui-extended-font-family: var(--styleguide-font-family);
+    --nga-ui-extended-font-weight: var(--styleguide-font-weight);
+    --nga-ui-extended-font-size: calc(0.9 * var(--styleguide-element-height));
+
+    /* POSITION & SIZE */
+    /* max total height: not needed, gets calculated automatically based on parent element height */
+    /* --nga-ui-extended-max-total-height: 30em; */
+    /* height of an element, not including paddings. */
+    --nga-ui-extended-element-height: var(--styleguide-element-height);
+    /* width of a main menu button. will shrink more if the viewport width is small */
+    --nga-ui-extended-element-width: 180px;
+    /* padding e.g. of buttons */
+    --nga-ui-extended-element-padding-vertical: calc(1.3 * var(--styleguide-margin));
+    --nga-ui-extended-element-padding-horizontal: calc(1.6 * var(--styleguide-margin));
+    /* distance between elements. mostly used for margins, sometimes also paddings */
+    --nga-ui-extended-element-margin: var(--styleguide-margin);
+    --nga-ui-extended-element-inner-margin-ratio: 0.5;
+    /* border radius = roundness of corners of buttons. 0 = buttons have no rounded corners.
+    set to negative values, to also make the main menu corners less round. */
+    --nga-ui-extended-border-radius: 0.85em;
+    /* Z-index - higher z index = element rendered on top of lower z-index elements */
+    --nga-ui-extended-overlay-z-index: 50;
+
+    /* SLIDERS */
+    /* how much the slider should grow (flex-grow) */
+    --nga-ui-extended-slider-flex-size: 1;
+    /* how big the thumb (slider handle) should be) */
+    --nga-ui-extended-slider-thumb-size: 1.5em;
+    /* thickness of slider track */
+    --nga-ui-extended-slider-bar-height: 0.3em;
+    /* width of whole slider, also affected by width of the viewport */
+    --nga-ui-extended-slider-width: 12em;
+}

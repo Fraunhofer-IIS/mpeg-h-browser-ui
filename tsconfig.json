@@ -1,0 +1,26 @@
+{
+  "compilerOptions": {
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "target": "es2020",
+    "lib": ["es2020", "dom"],
+    "skipLibCheck": true,
+    "declaration": true,
+    "sourceMap": false, // enable for debugging TypeScript in the browser
+    "declarationMap": false,
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
+    "noImplicitAny": true,
+    "strict": false,
+    "verbatimModuleSyntax": false,
+    "forceConsistentCasingInFileNames": true
+  },
+  "files": [],
+  "exclude": ["node_modules", "**/*/dist", "**/*/test"],
+  "references": [
+    { "path": "libs/core" },
+    { "path": "libs/ui-renderer" }
+  ]
+}

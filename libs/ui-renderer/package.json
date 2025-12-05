@@ -1,0 +1,53 @@
+{
+  "name": "@wmt/mpeg-h-browser-ui-renderer",
+  "version": "2.0.0",
+  "description": "MPEG-H Browser UI Renderer",
+  "homepage": "https://github.com/Fraunhofer-IIS/mpeg-h-browser-ui",
+  "bugs": "https://github.com/Fraunhofer-IIS/mpeg-h-browser-ui/issues",
+  "license": "SEE LICENSE IN license.txt",
+  "author": {
+    "name": "Fraunhofer IIS",
+    "email": "amm-info@iis.fraunhofer.de"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Fraunhofer-IIS/mpeg-h-browser-ui.git"
+  },
+  "files": [
+    "dist/**/*"
+  ],
+  "type": "module",
+  "browser": "./dist/umd/mpeg-h-browser-ui-renderer.js",
+  "module": "./dist/lib/index.js",
+  "types": "./dist/lib/index.d.ts",
+  "exports": "./dist/lib/index.js",
+  "source": "index.ts",
+  "scripts": {
+    "clean": "rimraf ./dist",
+    "prepublishOnly": "pnpm build",
+    "build": "pnpm run build:lib && pnpm run build:browser",
+    "build:lib": "tsc -b",
+    "build:browser": "webpack",
+    "format": "prettier --write \"./**/*.{ts,js,css}\"",
+    "lint": "eslint \"./**/*.{ts,js}\" --fix",
+    "test": "jest --runInBand --detectOpenHandles ",
+    "test:watch": "jest --watchAll --runInBand --detectOpenHandles ",
+    "test:coverage": "jest --coverage --runInBand --detectOpenHandles "
+  },
+  "dependencies": {
+    "@wmt/mpeg-h-browser-ui-core": "workspace:^"
+  },
+  "packageManager": "pnpm@8.15.3",
+  "engines": {
+    "node": ">=20",
+    "pnpm": ">=8"
+  },
+  "private": true,
+  "devDependencies": {
+    "@eslint/css": "^0.14.1",
+    "@eslint/js": "^9.39.1",
+    "eslint": "^9.39.1",
+    "globals": "^16.5.0",
+    "typescript-eslint": "^8.48.1"
+  }
+}

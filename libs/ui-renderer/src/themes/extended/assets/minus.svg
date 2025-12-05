@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="minus_icon" xmlns="http://www.w3.org/2000/svg" viewBox="105 105 290 290">
+  <defs>
+    <style>
+      .cls-1 {
+        fill: #fff;
+      }
+    </style>
+  </defs>
+  <rect class="cls-1" x="105" y="230" width="290" height="40" rx="20" ry="20"/>
+</svg>
