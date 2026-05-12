@@ -1,7 +1,7 @@
 /*-----------------------------------------------------------------------------
 Software License for The Fraunhofer FDK MPEG-H Software
 
-Copyright (c) 2025 - 2025 Fraunhofer-Gesellschaft zur Förderung der angewandten
+Copyright (c) 2025 - 2026 Fraunhofer-Gesellschaft zur Förderung der angewandten
 Forschung e.V. and Contributors
 All rights reserved.
 
@@ -90,7 +90,7 @@ export abstract class PopupView extends UiComponent {
   element: HTMLElement;
   protected ac = new AbortController();
   private _shown: boolean = false;
-  private _registeredNavComponents: UiComponentFocusable[] = [];
+  private registeredNavComponents: UiComponentFocusable[] = [];
 
   constructor(
     rootElement: HTMLElement,
@@ -113,74 +113,88 @@ export abstract class PopupView extends UiComponent {
     this.viewModel = vm;
   }
 
-  registerComponentFirstLayer(elem: UiComponentFocusable, isTarget = false) {
+  registerComponentFirstLayer(
+    elem: UiComponentFocusable,
+    isTarget = false,
+    previousElem: UiComponentFocusable = null,
+  ) {
     const exnavs = this.params?.get(
       "navigationControllers",
     ) as ExtendedNavController[];
-
-    if (exnavs != null && exnavs.length != null) {
-      for (const exnav of exnavs) {
-        if (!exnav?.setConnection) continue;
+    if (exnavs == null || exnavs.length == null) {
+      return;
+    }
+    for (const exnav of exnavs) {
+      if (!exnav?.setConnection) {
+        continue;
+      }
+      exnav.setConnection(
+        elem,
+        "back",
+        () => {
+          this.hide();
+          return this.parentFocusElement;
+        },
+        true,
+      );
+      if (elem instanceof ButtonView) {
         exnav.setConnection(
           elem,
-          "back",
+          "select",
           () => {
-            this.hide();
+            const newTarget = elem?.action(elem);
+            if (newTarget instanceof UiComponentFocusable) {
+              return newTarget;
+            }
             return this.parentFocusElement;
           },
           true,
         );
-        if (elem instanceof ButtonView) {
-          exnav.setConnection(
-            elem,
-            "select",
-            () => {
-              const newTarget = elem?.action(elem);
-              if (newTarget instanceof UiComponentFocusable) {
-                return newTarget;
-              }
-              return this.parentFocusElement;
-            },
-            true,
-          );
-        }
-        // only set parent -> select = elem if parent -> select = undefined.
-        exnav.setConnection(
-          this.parentFocusElement,
-          "select",
-          () => {
-            this.show();
-            (this.parentFocusElement as ButtonView)?.setActive(true);
-            return elem;
-          },
-          isTarget,
-        );
-        if (
-          this._registeredNavComponents.length > 0 &&
-          this._registeredNavComponents.indexOf(elem) == -1
-        ) {
-          exnav.setConnection(
-            this._registeredNavComponents[
-              this._registeredNavComponents.length - 1
-            ],
-            "down",
-            elem,
-            true,
-          );
-          exnav.setConnection(
-            elem,
-            "up",
-            this._registeredNavComponents[
-              this._registeredNavComponents.length - 1
-            ],
-            true,
-          );
+      }
+      // only sets parent -> select = elem if parent -> select = undefined or if isTarget is true.
+      exnav.setConnection(
+        this.parentFocusElement,
+        "select",
+        () => {
+          this.show();
+          (this.parentFocusElement as ButtonView)?.setActive(true);
+          return elem;
+        },
+        isTarget,
+      );
+      if (
+        this.registeredNavComponents.length > 0 &&
+        this.registeredNavComponents.indexOf(elem) == -1
+      ) {
+        const previousOrLastElem =
+          previousElem ??
+          this.registeredNavComponents[this.registeredNavComponents.length - 1];
+        const nextElem = exnav.getConnection(previousOrLastElem, "down");
+        this.connectVertical(exnav, previousOrLastElem, elem);
+        if (nextElem != null && nextElem instanceof UiComponentFocusable) {
+          this.connectVertical(exnav, elem, nextElem);
         }
       }
     }
-    if (this._registeredNavComponents.indexOf(elem) == -1) {
-      this._registeredNavComponents.push(elem);
+    if (this.registeredNavComponents.indexOf(elem) == -1) {
+      this.registeredNavComponents.push(elem);
     }
+  }
+
+  /**
+   * vertivcally connect elem1(top) and elem2(bottom) with up and down actions.
+   * Only connect them, if both are already in the nav graph!
+   */
+  private connectVertical(
+    exnav: ExtendedNavController,
+    elem1: UiComponentFocusable,
+    elem2: UiComponentFocusable,
+  ) {
+    if (!(exnav.hasSource(elem1) && exnav.hasSource(elem2))) {
+      return;
+    }
+    exnav.setConnection(elem1, "down", elem2, true);
+    exnav.setConnection(elem2, "up", elem1, true);
   }
 
   unregisterComponentFirstLayer(elem: UiComponentFocusable) {
@@ -189,23 +203,64 @@ export abstract class PopupView extends UiComponent {
     ) as ExtendedNavController[];
     if (exnavs != null && exnavs.length != null) {
       for (const exnav of exnavs) {
-        if (!exnav?.setConnection) continue;
+        if (!exnav?.setConnection) {
+          continue;
+        }
+
+        const upElem = exnav?.getConnection(elem, "up");
+        const downElem = exnav?.getConnection(elem, "down");
+
+        // if to be removed elem has focus: shift focus to previous or parent elem
+        if (exnav?.currentFocus == elem) {
+          exnav?.performAction("up");
+        }
+        if (exnav?.currentFocus == elem) {
+          exnav?.performAction("back");
+        }
+
+        // close possible up/down nav gap or remove nav in edge cases
+        if (
+          upElem instanceof UiComponentFocusable &&
+          exnav?.getConnection(upElem, "down") != null
+        ) {
+          exnav?.setConnection(
+            upElem,
+            "down",
+            downElem instanceof UiComponentFocusable ? downElem : undefined,
+            true,
+          );
+        }
+        if (
+          downElem instanceof UiComponentFocusable &&
+          exnav?.getConnection(downElem, "up") != null
+        ) {
+          exnav?.setConnection(
+            downElem,
+            "up",
+            upElem instanceof UiComponentFocusable ? upElem : undefined,
+            true,
+          );
+        }
+
+        // fix parent select connection if needed
         if (exnav?.getConnection(this.parentFocusElement, "select") == elem) {
           exnav?.setConnection(
             this.parentFocusElement,
             "select",
-            undefined,
+            exnav?.getConnection(elem, "down") ??
+              exnav?.getConnection(elem, "up") ??
+              this.parentFocusElement,
             true,
           );
         }
-        // exnav?.setConnection(elem, "back", undefined, true); - already included in removeSource(elem)
+
         exnav?.removeSource(elem);
       }
     }
     // remove component from registered nav components array
-    const index = this._registeredNavComponents.indexOf(elem);
+    const index = this.registeredNavComponents.indexOf(elem);
     if (index !== -1) {
-      this._registeredNavComponents.splice(index, 1);
+      this.registeredNavComponents.splice(index, 1);
     }
   }
 
@@ -225,8 +280,10 @@ export abstract class PopupView extends UiComponent {
     ) as ExtendedNavController[];
     if (exnavs != null && exnavs.length != null) {
       for (const exnav of exnavs) {
-        if (!exnav?.currentFocus) continue;
-        if (this._registeredNavComponents.indexOf(exnav.currentFocus) !== -1) {
+        if (!exnav?.currentFocus) {
+          continue;
+        }
+        if (this.registeredNavComponents.indexOf(exnav.currentFocus) !== -1) {
           exnav.currentFocus = this.parentFocusElement;
         }
       }
@@ -242,7 +299,6 @@ export abstract class PopupView extends UiComponent {
   dispose() {
     // clear vm listeners
     this.ac.abort();
-    // remove element
-    this.element?.remove();
+    super.dispose();
   }
 }

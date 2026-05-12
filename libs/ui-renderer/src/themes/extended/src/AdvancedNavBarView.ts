@@ -1,7 +1,7 @@
 /*-----------------------------------------------------------------------------
 Software License for The Fraunhofer FDK MPEG-H Software
 
-Copyright (c) 2025 - 2025 Fraunhofer-Gesellschaft zur Förderung der angewandten
+Copyright (c) 2025 - 2026 Fraunhofer-Gesellschaft zur Förderung der angewandten
 Forschung e.V. and Contributors
 All rights reserved.
 
@@ -172,7 +172,9 @@ export class AdvancedNavBarView extends UiComponentFocusable {
     ) as ExtendedNavController[];
     if (exnavs != null && exnavs.length != null) {
       for (const exnav of exnavs) {
-        if (!exnav.setConnection) continue;
+        if (!exnav.setConnection) {
+          continue;
+        }
         exnav.setConnection(this, "left", this.leftAction.bind(this), true);
         exnav.setConnection(this, "right", this.rightAction.bind(this), true);
       }
@@ -186,11 +188,14 @@ export class AdvancedNavBarView extends UiComponentFocusable {
     ) as ExtendedNavController[];
     if (exnavs != null && exnavs.length != null) {
       for (const exnav of exnavs) {
-        if (!exnav.setConnection) continue;
+        if (!exnav.setConnection) {
+          continue;
+        }
         exnav.setConnection(this, "left", undefined, true);
         exnav.setConnection(this, "right", undefined, true);
       }
     }
+    super.dispose();
   }
 
   setEnabled(e: boolean): void {

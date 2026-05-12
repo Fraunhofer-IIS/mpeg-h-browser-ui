@@ -1,7 +1,7 @@
 /*-----------------------------------------------------------------------------
 Software License for The Fraunhofer FDK MPEG-H Software
 
-Copyright (c) 2025 - 2025 Fraunhofer-Gesellschaft zur Förderung der angewandten
+Copyright (c) 2025 - 2026 Fraunhofer-Gesellschaft zur Förderung der angewandten
 Forschung e.V. and Contributors
 All rights reserved.
 
@@ -93,7 +93,7 @@ interface labeledData {
 export class SingleSelectionView extends UiComponent {
   element: HTMLElement;
   buttons: ButtonView[] = [];
-  data: labeledData[];
+  data: labeledData[] = [];
   active: labeledData;
   selectAction: (selected: labeledData) => void;
 
@@ -111,25 +111,43 @@ export class SingleSelectionView extends UiComponent {
     }
   }
 
-  updateData(data: labeledData[]) {
-    this.active = null;
-    if (this.data == data) return;
-    for (const btn of this.buttons) {
-      btn.element.remove();
+  updateData(data: labeledData[], mode: string = "default") {
+    if (this.data == data) {
+      return;
     }
-    this.buttons = [];
-    if (data == null) data = [];
+    if (this.data == null) {
+      this.data = [];
+    }
+    if (data == null) {
+      data = [];
+    }
+    if (data.indexOf(this.active) == -1) {
+      this.active = null;
+    }
+    // remove too many
+    if (data.length < this.data.length) {
+      for (let i = this.data.length - 1; i >= data.length; i--) {
+        this.buttons[i].element.remove();
+        this.buttons.splice(i, 1);
+      }
+    }
+    // append extra
+    if (data.length > this.data.length) {
+      for (let i = this.data.length; i < data.length; i++) {
+        this.buttons.push(
+          new ButtonView(
+            this.element,
+            this.params,
+            this.select.bind(this),
+            data[i]?.labels,
+          ),
+        );
+      }
+    }
+
     this.data = data;
-    for (const d of data) {
-      const btnview = new ButtonView(
-        this.element,
-        this.params,
-        this.select.bind(this),
-        d?.labels,
-      );
-      btnview.setAction(this.select.bind(this));
-      this.buttons.push(btnview);
-    }
+    this.setActive(this.active);
+    this.updateLabels(mode);
   }
 
   updateLabels(mode: string) {
@@ -156,9 +174,8 @@ export class SingleSelectionView extends UiComponent {
   }
 
   setActive(d: labeledData) {
-    if (this.active == d) return;
-    if (this.active != null) {
-      this.buttons[this.data.indexOf(this.active)]?.setActive(false);
+    for (const b of this.buttons) {
+      b.setActive(false);
     }
     this.active = d;
     this.buttons[this.data.indexOf(this.active)]?.setActive(true);

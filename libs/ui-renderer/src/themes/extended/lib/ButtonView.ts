@@ -1,7 +1,7 @@
 /*-----------------------------------------------------------------------------
 Software License for The Fraunhofer FDK MPEG-H Software
 
-Copyright (c) 2025 - 2025 Fraunhofer-Gesellschaft zur Förderung der angewandten
+Copyright (c) 2025 - 2026 Fraunhofer-Gesellschaft zur Förderung der angewandten
 Forschung e.V. and Contributors
 All rights reserved.
 
@@ -85,11 +85,13 @@ import { UiComponentFocusable } from "./UiComponentFocusable";
 import { LabelView } from "./LabelView";
 import { ImageView } from "./ImageView";
 
+type ButtonStyle = "dropdown" | "dropup" | "selection" | "action";
+
 export class ButtonView extends UiComponentFocusable {
   element: HTMLButtonElement;
   labelView: LabelView | null;
   imageView: ImageView | null;
-  private _style: string;
+  private _style: ButtonStyle;
 
   constructor(
     rootElement: HTMLElement,
@@ -97,7 +99,7 @@ export class ButtonView extends UiComponentFocusable {
     public action: (b: ButtonView) => unknown,
     localizables: Localizable[] = undefined,
     imageSrc: string = undefined,
-    style = "selection",
+    style: ButtonStyle = "selection",
   ) {
     super(rootElement, params);
     this.element = document.createElement("button");
@@ -160,10 +162,7 @@ export class ButtonView extends UiComponentFocusable {
    * Set the button style.
    * @param style "dropdown", "dropup", "selection", "action"
    */
-  set style(style: string) {
-    if (!["dropdown", "dropup", "selection", "action"].includes(style)) {
-      return;
-    }
+  set style(style: ButtonStyle) {
     this._style = style;
     this.element.classList.toggle("btn-dropdown", style === "dropdown");
     this.element.classList.toggle("btn-dropup", style === "dropup");
@@ -197,7 +196,9 @@ export class ButtonView extends UiComponentFocusable {
         this.setActive(false);
       }
       // make focusable by tab
-      if (i === 0) this.element.tabIndex = 0;
+      if (i === 0) {
+        this.element.tabIndex = 0;
+      }
     }
   }
 }

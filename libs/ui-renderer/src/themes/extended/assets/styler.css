@@ -1,7 +1,7 @@
 /*-----------------------------------------------------------------------------
 Software License for The Fraunhofer FDK MPEG-H Software
 
-Copyright (c) 2025 - 2025 Fraunhofer-Gesellschaft zur Förderung der angewandten
+Copyright (c) 2025 - 2026 Fraunhofer-Gesellschaft zur Förderung der angewandten
 Forschung e.V. and Contributors
 All rights reserved.
 
@@ -145,8 +145,8 @@ GLOBAL SETTINGS
   );
 }
 
-.hidden {
-  display: none;
+.nga-ui-extended .hidden {
+  display: none !important;
 }
 
 .nga-ui-extended .capitalize p::first-letter,
@@ -173,28 +173,34 @@ GLOBAL SETTINGS
 }
 
 /* focus and nav controller */
-.focused_navctrl_0:focus,
-.focused_navctrl_0:focus-visible,
-.focused_navctrl_0:focus.slider_and_label_container .slidercontainer,
-.focused_navctrl_0:focus-visible.slider_and_label_container .slidercontainer {
+.nga-ui-extended .focused_navctrl_0:focus,
+.nga-ui-extended .focused_navctrl_0:focus-visible,
+.nga-ui-extended
+  .focused_navctrl_0:focus.slider_and_label_container
+  .slidercontainer,
+.nga-ui-extended
+  .focused_navctrl_0:focus-visible.slider_and_label_container
+  .slidercontainer {
   box-shadow: -0.04em -0.04em 0.55em rgba(255, 255, 255, 0.7);
   outline: none !important;
 }
 
-.focused_navctrl_0,
-.focused_navctrl_0.slider_and_label_container .slidercontainer {
+.nga-ui-extended .focused_navctrl_0:not(.slider_and_label_container),
+.nga-ui-extended
+  .focused_navctrl_0.slider_and_label_container
+  .slidercontainer {
   background-color: black !important;
   box-shadow: -0.04em -0.04em 0.55em rgba(230, 230, 230, 0.6);
 }
 
-.focused_navctrl_0.slider_and_label_container {
+.nga-ui-extended .focused_navctrl_0.slider_and_label_container {
   color: unset !important;
   box-shadow: unset !important;
   outline: unset !important;
   background-color: unset !important;
 }
 
-img {
+.nga-ui-extended img {
   height: 1em;
   width: 1em;
 }
@@ -255,7 +261,7 @@ BUTTONS
   box-sizing: content-box;
   min-width: 8em;
   width: calc(
-    25dvw - 2 * var(--nga-ui-extended-element-padding-horizontal) - 2 *
+    25vw - 2 * var(--nga-ui-extended-element-padding-horizontal) - 2 *
       var(--nga-ui-extended-element-margin)
   );
   max-width: var(--nga-ui-extended-element-width);
@@ -274,7 +280,8 @@ BUTTONS
   line-break: normal;
   border: none;
   margin: var(--nga-ui-extended-element-margin);
-  scroll-margin: var(--nga-ui-extended-element-margin);
+  scroll-margin-bottom: var(--nga-ui-extended-element-margin);
+  scroll-margin-top: var(--nga-ui-extended-element-margin);
   text-align: left;
   cursor: pointer;
   font-family: var(--nga-ui-extended-font-family);
@@ -336,7 +343,6 @@ MENU BAR SETTINGS
   position: relative;
   margin: 0;
   display: flex;
-  flex-wrap: wrap;
   box-sizing: border-box;
   padding: var(--nga-ui-extended-element-margin);
   gap: var(--nga-ui-extended-element-margin);
@@ -355,7 +361,7 @@ MENU BAR SETTINGS
 .nga-ui-extended .menubar > li > h2 {
   box-sizing: border-box;
   min-width: calc(8em + 2 * var(--nga-ui-extended-element-padding-horizontal));
-  width: calc(25dvw - 2 * var(--nga-ui-extended-element-margin));
+  width: calc(25vw - 2 * var(--nga-ui-extended-element-margin));
   max-width: calc(
     var(--nga-ui-extended-element-width) + 2 *
       var(--nga-ui-extended-element-padding-horizontal)
@@ -385,7 +391,6 @@ MENU BAR SETTINGS
   padding: calc(0.5 * var(--nga-ui-extended-element-padding-vertical));
   align-self: flex-end;
   justify-content: center;
-  scroll-margin: var(--nga-ui-extended-element-margin);
 }
 
 .nga-ui-extended .menubar *:has(button.advanced) {
@@ -420,6 +425,8 @@ POPUPS
 .nga-ui-extended .popup:not(.advanced_menu) {
   overflow-y: auto;
   overflow-x: hidden;
+  scroll-behavior: smooth;
+  overscroll-behavior: none;
 }
 
 .nga-ui-extended .submenu_l1 {
@@ -471,18 +478,19 @@ SLIDERS
 ###########################
 */
 
-.slider_and_label_container {
-  scroll-margin: var(--nga-ui-extended-element-margin);
+.nga-ui-extended .slider_and_label_container {
+  scroll-margin-bottom: var(--nga-ui-extended-element-margin);
+  scroll-margin-top: var(--nga-ui-extended-element-margin);
+  margin: var(--nga-ui-extended-element-margin);
 }
 
-.slider_and_label_container p {
+.nga-ui-extended .slider_and_label_container p {
   color: var(--nga-ui-extended-secondary-color);
   height: var(--nga-ui-extended-element-height);
   font-size: var(--nga-ui-extended-font-size);
   text-align: center;
-  margin: var(--nga-ui-extended-element-margin);
+  margin: 0;
   margin-bottom: calc(0.5 * var(--nga-ui-extended-element-margin));
-  scroll-margin: var(--nga-ui-extended-element-margin);
 }
 
 .nga-ui-extended .slidercontainer {
@@ -491,13 +499,15 @@ SLIDERS
   display: flex;
   flex-direction: row;
   align-items: center;
-  height: var(--nga-ui-extended-element-height);
-  background-color: transparent;
+  height: calc(
+    var(--nga-ui-extended-element-height) + 2 *
+      var(--nga-ui-extended-element-padding-vertical)
+  );
   font-size: var(--nga-ui-extended-font-size);
   color: var(--nga-ui-extended-secondary-color);
-  margin: var(--nga-ui-extended-element-margin);
+  margin: 0;
   margin-top: calc(0.5 * var(--nga-ui-extended-element-margin));
-  scroll-margin: var(--nga-ui-extended-element-margin);
+  scroll-margin-bottom: var(--nga-ui-extended-element-margin);
   scroll-margin-top: calc(
     1.5 * var(--nga-ui-extended-element-margin) +
       var(--nga-ui-extended-element-height)
@@ -505,6 +515,10 @@ SLIDERS
   border-radius: var(--nga-ui-extended-border-radius);
   padding: var(--nga-ui-extended-element-padding-vertical)
     calc(var(--nga-ui-extended-element-padding-horizontal) * 0.25);
+  /* This fixes layout shift issues on WlApp WebView */
+  background-color: rgba(0, 0, 0, 0.01);
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .nga-ui-extended
@@ -570,8 +584,8 @@ SLIDERS
 }
 
 .nga-ui-extended .slidercontainer input {
-  min-width: 7.5em;
-  height: 100%;
+  min-width: 7em;
+  height: calc(1.5 * var(--nga-ui-extended-slider-bar-height));
   flex-grow: var(--nga-ui-extended-slider-flex-size);
   background-color: transparent;
   margin: calc(
@@ -591,7 +605,7 @@ SLIDERS
     7em + var(--nga-ui-extended-element-padding-horizontal) + 2em
   );
   width: calc(
-    25dvw - 2 * var(--nga-ui-extended-element-padding-horizontal) - 2 *
+    25vw - 2 * var(--nga-ui-extended-element-padding-horizontal) - 2 *
       var(--nga-ui-extended-element-margin) + 1.5 *
       var(--nga-ui-extended-element-padding-horizontal) + 2em
   );
@@ -615,7 +629,6 @@ ADVANCED MENU
   display: flex;
   flex-direction: row;
   margin-bottom: var(--nga-ui-extended-element-margin);
-  scroll-margin: var(--nga-ui-extended-element-margin);
   align-items: center;
   align-content: center;
   justify-content: center;
@@ -648,9 +661,9 @@ ADVANCED MENU
 }
 
 .nga-ui-extended .advanced_menu .navbar button.navbtn {
-  margin: 0;
+  padding: 0 var(--nga-ui-extended-element-padding-vertical);
   display: block;
-  height: 100%;
+  height: var(--nga-ui-extended-element-height);
   flex-grow: 1;
   box-sizing: border-box;
   color: var(--nga-ui-extended-secondary-color);
@@ -665,8 +678,11 @@ ADVANCED MENU
     var(--nga-ui-extended-max-menu-height) -
       var(--nga-ui-extended-advanced-rest-height)
   );
+  box-sizing: border-box;
   overflow-y: auto;
   overflow-x: hidden;
+  scroll-behavior: smooth;
+  overscroll-behavior: none;
   background-color: rgba(255, 255, 255, 0.13);
   border-radius: calc(
     var(--nga-ui-extended-border-radius) + var(--nga-ui-extended-element-margin)
@@ -683,6 +699,10 @@ ADVANCED MENU
 }
 
 .nga-ui-extended .advanced_menu .advanced_selection {
+  max-height: min(
+    var(--nga-ui-extended-advanced-total-height),
+    var(--nga-ui-extended-max-menu-height)
+  );
   position: fixed;
   right: calc(100% + var(--nga-ui-extended-element-margin));
 }

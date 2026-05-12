@@ -1,7 +1,7 @@
 /*-----------------------------------------------------------------------------
 Software License for The Fraunhofer FDK MPEG-H Software
 
-Copyright (c) 2025 - 2025 Fraunhofer-Gesellschaft zur Förderung der angewandten
+Copyright (c) 2025 - 2026 Fraunhofer-Gesellschaft zur Förderung der angewandten
 Forschung e.V. and Contributors
 All rights reserved.
 
@@ -107,11 +107,14 @@ export class KindM implements NGAKind {
     readonly schemeUri = "",
   ) {}
   get kindDescription(): LabelsM | null {
-    if (this.schemeUri == "" || this.schemeUri == null) {
+    if (this.schemeUri === "" || this.schemeUri == null) {
       return null;
     } else {
       return new LabelsM(toLocalizables(this.schemeUri, this.value));
     }
+  }
+  equals(other: KindM) {
+    return this.schemeUri === other.schemeUri && this.value === other.value;
   }
 }
 
@@ -129,6 +132,18 @@ export class KindsM implements NGAKinds {
       }
     }
   }
+
+  equals(other: KindsM) {
+    if (other.length !== this.length) {
+      return false;
+    }
+    for (let i = 0; i < this.length; i++) {
+      if (!other[i].equals(this[i])) {
+        return false;
+      }
+    }
+    return true;
+  }
 }
 
 export class LabelM implements NGALabel {
@@ -143,22 +158,36 @@ export class LabelM implements NGALabel {
 
   /**
    * Check whether this label is in a specific language.
-   * @param lang Language code. Will only check the first two letters of lang, if lang is not a three letter language code.
+   * @param lang Language code, supports 2 letter codes, 3 letter codes or BCP47 tags.
    * @returns true if the languages match.
    */
   isInLang(lang: string): boolean | undefined {
     // cannot interpret lang keys that are less than 2 letters
-    if (lang.length < 2) return undefined;
-    if (this.label?.lang == null) return undefined;
-    let query = lang.toLowerCase();
-    let current = this.label.lang.toLowerCase();
+    if (this.label?.lang == null) {
+      return undefined;
+    }
     // convert to BCP47 codes and compare
-    query = toBCP47(query);
-    current = toBCP47(current);
+    const query = toBCP47(lang);
+    const current = toBCP47(this.label.lang);
+    if (query == undefined || current == undefined) {
+      return undefined;
+    }
     if (query === current) {
       return true;
     }
     return false;
+  }
+
+  equals(other: LabelM): boolean {
+    if (this.group?.length !== other.group?.length) {
+      return false;
+    }
+    for (let i = 0; i < this.group?.length; i++) {
+      if (!this.group[i].label.equals(other.group[i].label)) {
+        return false;
+      }
+    }
+    return this.label.equals(other.label);
   }
 }
 
@@ -189,12 +218,32 @@ export class LabelsM implements NGALabels {
     }
     return null;
   }
+
+  equals(other: LabelsM): boolean {
+    if (this.length !== other.length) {
+      return false;
+    }
+    for (let i = 0; i < this.length; i++) {
+      if (!this[i].equals(other[i])) {
+        return false;
+      }
+    }
+    return true;
+  }
 }
-export class AudioSceneComponentM extends EventTarget {
+export abstract class AudioSceneComponentM extends EventTarget {
   readonly labels: LabelsM;
   constructor(labels?: LabelsM) {
     super();
     this.labels = labels;
+  }
+  isEquivalentStructure(other: AudioSceneComponentM) {
+    return (
+      (this.labels == null && other.labels == null) ||
+      (this.labels != null &&
+        other.labels != null &&
+        this.labels?.equals(other.labels))
+    );
   }
 }
 
@@ -208,21 +257,46 @@ export type DomainInfo = {
 export class NumericPropertyM extends AudioSceneComponentM {
   private _value: number;
   constructor(
-    private readonly _minValue: number,
-    private readonly _maxValue: number,
+    private readonly minValue: number,
+    private readonly maxValue: number,
     public readonly defaultValue: number,
     public readonly domainInfo?: DomainInfo,
     labels?: LabelsM,
+    currentValue = defaultValue,
   ) {
+    if (minValue > maxValue) {
+      throw new RangeError("minValue must not be greater than maxValue");
+    }
+    if (!(minValue <= defaultValue && defaultValue <= maxValue)) {
+      throw new RangeError(
+        "defaultValue must be in range [minValue, maxValue]",
+      );
+    }
+    if (!(minValue <= currentValue && currentValue <= maxValue)) {
+      throw new RangeError(
+        "currentValue must be in range [minValue, maxValue]",
+      );
+    }
+    if (domainInfo?.domainMin && minValue < domainInfo.domainMin) {
+      throw new RangeError("minValue must not be less than domainMin");
+    }
+    if (domainInfo?.domainMax && maxValue > domainInfo.domainMax) {
+      throw new RangeError("maxValue must not be greater than domainMax");
+    }
+    if (domainInfo?.step && domainInfo.step < 0) {
+      throw new RangeError("step must not be negative");
+    }
     super(labels);
-    this._value = defaultValue;
+    this._value = currentValue;
   }
 
   set value(value: number) {
     // clamp to [min,max]
-    let x = clamp(value, this._minValue, this._maxValue);
+    let x = clamp(value, this.minValue, this.maxValue);
     // quantize to step
-    if (this.domainInfo?.step != null) x = quantize(x, this.domainInfo.step);
+    if (this.domainInfo?.step != null) {
+      x = quantize(x, this.domainInfo.step);
+    }
     // update if changed
     if (x !== this._value) {
       this._value = x;
@@ -231,6 +305,7 @@ export class NumericPropertyM extends AudioSceneComponentM {
           detail: {
             type: "valueChanged",
             value: this._value,
+            source: "local",
           },
         }),
       );
@@ -241,7 +316,45 @@ export class NumericPropertyM extends AudioSceneComponentM {
   }
 
   getRange(): [number, number] {
-    return [this._minValue, this._maxValue];
+    return [this.minValue, this.maxValue];
+  }
+
+  isEquivalentStructure(other: NumericPropertyM): boolean {
+    if (
+      other.getRange()[0] !== this.getRange()[0] ||
+      other.getRange()[1] !== this.getRange()[1] ||
+      other?.domainInfo?.domainMin !== this?.domainInfo?.domainMin ||
+      other?.domainInfo?.domainMax !== this?.domainInfo?.domainMax ||
+      other?.domainInfo?.step !== this?.domainInfo?.step ||
+      other?.domainInfo?.unit !== this?.domainInfo?.unit ||
+      other.defaultValue !== this.defaultValue
+    ) {
+      return false;
+    }
+    return true;
+  }
+
+  updateStateFromModel(updated: NumericPropertyM, source = "remote"): boolean {
+    // clamp to [min,max]
+    let x = clamp(updated.value, this.minValue, this.maxValue);
+    // quantize to step
+    if (this.domainInfo?.step != null) {
+      x = quantize(x, this.domainInfo.step);
+    }
+    // update if changed
+    if (x !== this._value) {
+      this._value = x;
+      this.dispatchEvent(
+        new CustomEvent("change", {
+          detail: {
+            type: "valueChanged",
+            value: this._value,
+            source: source,
+          },
+        }),
+      );
+    }
+    return true;
   }
 }
 
@@ -267,16 +380,21 @@ export class PositionInteractivityM
     defaultDistance?: number,
     domainDistance?: DomainInfo,
     labels?: LabelsM,
+    currentAzimuth: number = defaultAzimuth,
+    currentElevation: number = defaultElevation,
+    currentDistance: number = defaultDistance,
   ) {
     super(labels);
 
-    // setup NumericProperties. Ranges & quantizations according to ISO/IEC 23008-3:2022
+    // setup NumericProperties. Ranges & quantizations from supplied domains
     if (minAzimuth != null && maxAzimuth != null && defaultAzimuth != null) {
       this.azimuthProp = new NumericPropertyM(
         minAzimuth,
         maxAzimuth,
         defaultAzimuth,
         domainAzimuth,
+        null,
+        currentAzimuth,
       );
     }
     if (
@@ -289,6 +407,8 @@ export class PositionInteractivityM
         maxElevation,
         defaultElevation,
         domainElevation,
+        null,
+        currentElevation,
       );
     }
     if (minDistance != null && maxDistance != null && defaultDistance != null) {
@@ -297,6 +417,8 @@ export class PositionInteractivityM
         maxDistance,
         defaultDistance,
         domainDistance,
+        null,
+        currentDistance,
       );
     }
   }
@@ -330,7 +452,9 @@ export class PositionInteractivityM
   }
 
   setAzimuth(azimuthValue: number): number {
-    if (this.azimuthProp == undefined) return undefined;
+    if (this.azimuthProp == undefined) {
+      return undefined;
+    }
     this.azimuthProp.value = azimuthValue;
     return this.azimuthProp.value;
   }
@@ -338,7 +462,9 @@ export class PositionInteractivityM
     return this.azimuthProp?.value;
   }
   setElevation(elevationValue: number): number {
-    if (this.elevationProp == undefined) return undefined;
+    if (this.elevationProp == undefined) {
+      return undefined;
+    }
     this.elevationProp.value = elevationValue;
     return this.elevationProp.value;
   }
@@ -346,7 +472,9 @@ export class PositionInteractivityM
     return this.elevationProp?.value;
   }
   setDistance(distanceValue: number): number {
-    if (this.distanceProp == undefined) return undefined;
+    if (this.distanceProp == undefined) {
+      return undefined;
+    }
     this.distanceProp.value = distanceValue;
     return this.distanceProp.value;
   }
@@ -354,14 +482,43 @@ export class PositionInteractivityM
     return this.distanceProp?.value;
   }
   getDomainInfo(axis: "azimuth" | "elevation" | "distance"): DomainInfo {
-    if (axis == "azimuth") return this.azimuthProp?.domainInfo;
-    if (axis == "elevation") return this.elevationProp?.domainInfo;
-    if (axis == "distance") return this.distanceProp?.domainInfo;
+    if (axis === "azimuth") {
+      return this.azimuthProp?.domainInfo;
+    }
+    if (axis === "elevation") {
+      return this.elevationProp?.domainInfo;
+    }
+    if (axis === "distance") {
+      return this.distanceProp?.domainInfo;
+    }
   }
   getRange(axis: "azimuth" | "elevation" | "distance"): [number, number] {
-    if (axis == "azimuth") return this.azimuthProp?.getRange();
-    if (axis == "elevation") return this.elevationProp?.getRange();
-    if (axis == "distance") return this.distanceProp?.getRange();
+    if (axis === "azimuth") {
+      return this.azimuthProp?.getRange();
+    }
+    if (axis === "elevation") {
+      return this.elevationProp?.getRange();
+    }
+    if (axis === "distance") {
+      return this.distanceProp?.getRange();
+    }
+  }
+  isEquivalentStructure(other: PositionInteractivityM): boolean {
+    return (
+      super.isEquivalentStructure(other) &&
+      ((this.azimuthProp == null && other.azimuthProp == null) ||
+        (this.azimuthProp != null &&
+          other.azimuthProp != null &&
+          this.azimuthProp.isEquivalentStructure(other.azimuthProp))) &&
+      ((this.elevationProp == null && other.elevationProp == null) ||
+        (this.elevationProp != null &&
+          other.elevationProp != null &&
+          this.elevationProp.isEquivalentStructure(other.elevationProp))) &&
+      ((this.distanceProp == null && other.distanceProp == null) ||
+        (this.distanceProp != null &&
+          other.distanceProp != null &&
+          this.distanceProp.isEquivalentStructure(other.distanceProp)))
+    );
   }
 }
 
@@ -377,6 +534,7 @@ export class ProminenceInteractivityM
     defaultProminence: number,
     domainProminence: DomainInfo,
     labels?: LabelsM,
+    currentProminence = defaultProminence,
   ) {
     super(labels);
     // range & quantization according to ISO/IEC 23008-3:2022
@@ -385,6 +543,8 @@ export class ProminenceInteractivityM
       maxProminence,
       defaultProminence,
       domainProminence,
+      null,
+      currentProminence,
     );
   }
 
@@ -412,17 +572,20 @@ export class ProminenceInteractivityM
   }
 }
 
-class AudioSceneNodeM extends AudioSceneComponentM {
+abstract class AudioSceneNodeM extends AudioSceneComponentM {
   constructor(
     public readonly id?: number,
     labels?: LabelsM,
   ) {
     super(labels);
   }
+  isEquivalentStructure(other: AudioSceneNodeM): boolean {
+    return super.isEquivalentStructure(other) && this.id === other.id;
+  }
 }
 
 export class AudioElementM extends AudioSceneNodeM implements NGAAudioElement {
-  private _enabled: boolean = true;
+  private enabled: boolean = true;
 
   /**
    * Construct a new AudioElementM
@@ -444,10 +607,11 @@ export class AudioElementM extends AudioSceneNodeM implements NGAAudioElement {
     public readonly prominenceInteractivity?: ProminenceInteractivityM,
     id?: number,
     labels?: LabelsM,
+    isEnabled = isDefaultEnabled,
   ) {
     super(id, labels);
     if (isDefaultEnabled != null) {
-      this._enabled = isDefaultEnabled;
+      this.enabled = isEnabled;
     }
   }
 
@@ -455,7 +619,7 @@ export class AudioElementM extends AudioSceneNodeM implements NGAAudioElement {
    * @returns Returns the rendering state of the audio element. True means that the audio element is currently selected for rendering.
    */
   isEnabled(): boolean {
-    return this._enabled;
+    return this.enabled;
   }
 
   /**
@@ -463,14 +627,15 @@ export class AudioElementM extends AudioSceneNodeM implements NGAAudioElement {
    * (only possible if isToggleable is set to true).
    */
   enable(): void {
-    if (this.isToggleable && this._enabled != true) {
-      this._enabled = true;
+    if (this.isToggleable && this.enabled !== true) {
+      this.enabled = true;
       this.dispatchEvent(
         new CustomEvent("change", {
           detail: {
             type: "enabledChanged",
             id: this.id,
             enabled: true,
+            source: "local",
           },
         }),
       );
@@ -482,29 +647,105 @@ export class AudioElementM extends AudioSceneNodeM implements NGAAudioElement {
    * (only possible if isToggleable is set to true).
    */
   disable(): void {
-    if (this.isToggleable && this._enabled != false) {
-      this._enabled = false;
+    if (this.isToggleable && this.enabled !== false) {
+      this.enabled = false;
       this.dispatchEvent(
         new CustomEvent("change", {
           detail: {
             type: "enabledChanged",
             id: this.id,
             enabled: false,
+            source: "local",
           },
         }),
       );
     }
   }
+
+  isEquivalentStructure(other: AudioElementM): boolean {
+    return (
+      super.isEquivalentStructure(other) &&
+      this.kinds.equals(other.kinds) &&
+      this?.language === other?.language &&
+      this?.isDefaultEnabled === other?.isDefaultEnabled &&
+      this?.isToggleable === other?.isToggleable &&
+      ((this.prominenceInteractivity == null &&
+        other.prominenceInteractivity == null) ||
+        (this.prominenceInteractivity != null &&
+          other.prominenceInteractivity != null &&
+          this.prominenceInteractivity.isEquivalentStructure(
+            other.prominenceInteractivity,
+          ))) &&
+      ((this.positionInteractivity == null &&
+        other.positionInteractivity == null) ||
+        (this.positionInteractivity != null &&
+          other.positionInteractivity != null &&
+          this.positionInteractivity.isEquivalentStructure(
+            other.positionInteractivity,
+          )))
+    );
+  }
+
+  updateStateFromModel(updated: AudioElementM, source = "remote"): void {
+    const prevEnabled = this.enabled;
+    this.enabled = updated.enabled;
+    if (prevEnabled !== this.enabled) {
+      this.dispatchEvent(
+        new CustomEvent("change", {
+          detail: {
+            type: "enabledChanged",
+            id: this.id,
+            enabled: this.enabled,
+            source: source,
+          },
+        }),
+      );
+    }
+    this?.positionInteractivity?.azimuthProp?.updateStateFromModel(
+      updated?.positionInteractivity?.azimuthProp,
+      source,
+    );
+    this?.positionInteractivity?.elevationProp?.updateStateFromModel(
+      updated?.positionInteractivity?.elevationProp,
+      source,
+    );
+    this?.positionInteractivity?.distanceProp?.updateStateFromModel(
+      updated?.positionInteractivity?.distanceProp,
+      source,
+    );
+    this?.prominenceInteractivity?.prominenceProp?.updateStateFromModel(
+      updated?.prominenceInteractivity?.prominenceProp,
+      source,
+    );
+  }
 }
 
 export class AudioElementsM implements NGAAudioElements {
   [index: number]: AudioElementM;
-  length: number;
+  readonly length: number;
 
   constructor(objects: AudioElementM[]) {
     this.length = objects.length;
     for (let i = 0; i < this.length; i++) {
       this[i] = objects[i];
+    }
+  }
+
+  isEquivalentStructure(other: AudioElementsM) {
+    if (this.length !== other.length) {
+      return false;
+    }
+    for (let i = 0; i < this.length; i++) {
+      if (!this[i].isEquivalentStructure(other[i])) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  updateStateFromModel(updated: AudioElementsM, source = "remote"): void {
+    for (let i = 0; i < this.length; i++) {
+      this[i].updateStateFromModel(updated[i], source);
     }
   }
 }
@@ -513,42 +754,48 @@ export class AudioElementSelectionM
   extends AudioSceneNodeM
   implements NGAAudioElementSelection
 {
-  private _active: AudioElementM | null = null;
+  private active: AudioElementM | null = null;
 
   constructor(
     readonly audioElements: AudioElementsM,
-    activeElement?: AudioElementM,
+    readonly defaultElement?: AudioElementM,
     readonly positionInteractivity?: PositionInteractivityM,
     readonly prominenceInteractivity?: ProminenceInteractivityM,
     id?: number,
     labels?: LabelsM,
+    activeElement = defaultElement,
   ) {
     super(id, labels);
     this.audioElements = audioElements;
     if (activeElement != null) {
-      this._active = activeElement;
+      this.active = activeElement;
     } else if (audioElements.length > 0) {
-      this._active = audioElements[0];
+      this.active = audioElements[0];
     }
   }
 
   selectAudioElement(audioElement: AudioElementM): void {
     const x = this.indexOf(audioElement);
-    if (x === -1) return; // preselection unknown
-    if (this._active === audioElement) return; // do not re-select currently active preselection
-    this._active = audioElement;
+    if (x === -1) {
+      return; // preselection unknown
+    }
+    if (this.active === audioElement) {
+      return; // do not re-select currently active preselection
+    }
+    this.active = audioElement;
     this.dispatchEvent(
       new CustomEvent("change", {
         detail: {
           type: "audioElementSelectionChanged",
           id: audioElement.id,
           parentId: this.id,
+          source: "local",
         },
       }),
     );
   }
   getSelectedAudioElement(): AudioElementM | null {
-    return this._active;
+    return this.active;
   }
 
   private indexOf(p: AudioElementM): number {
@@ -559,15 +806,101 @@ export class AudioElementSelectionM
     }
     return -1;
   }
+
+  isEquivalentStructure(other: AudioElementSelectionM): boolean {
+    return (
+      super.isEquivalentStructure(other) &&
+      this.audioElements.isEquivalentStructure(other.audioElements) &&
+      ((this.defaultElement == null && other.defaultElement == null) ||
+        (this.defaultElement != null &&
+          other.defaultElement != null &&
+          this.defaultElement.isEquivalentStructure(other.defaultElement))) &&
+      ((this.prominenceInteractivity == null &&
+        other.prominenceInteractivity == null) ||
+        (this.prominenceInteractivity != null &&
+          other.prominenceInteractivity != null &&
+          this.prominenceInteractivity.isEquivalentStructure(
+            other.prominenceInteractivity,
+          ))) &&
+      ((this.positionInteractivity == null &&
+        other.positionInteractivity == null) ||
+        (this.positionInteractivity != null &&
+          other.positionInteractivity != null &&
+          this.positionInteractivity.isEquivalentStructure(
+            other.positionInteractivity,
+          )))
+    );
+  }
+
+  updateStateFromModel(
+    updated: AudioElementSelectionM,
+    source = "remote",
+  ): void {
+    const prevActive = this.active;
+    this.audioElements.updateStateFromModel(updated.audioElements, source);
+    this.defaultElement?.updateStateFromModel(updated.defaultElement, source);
+    this.active =
+      this.audioElements[updated.indexOf(updated.getSelectedAudioElement())];
+    if (this.active.id !== prevActive.id) {
+      this.dispatchEvent(
+        new CustomEvent("change", {
+          detail: {
+            type: "audioElementSelectionChanged",
+            id: this.active.id,
+            parentId: this.id,
+            source: source,
+          },
+        }),
+      );
+    }
+
+    this?.positionInteractivity?.azimuthProp?.updateStateFromModel(
+      updated?.positionInteractivity?.azimuthProp,
+      source,
+    );
+    this?.positionInteractivity?.elevationProp?.updateStateFromModel(
+      updated?.positionInteractivity?.elevationProp,
+      source,
+    );
+    this?.positionInteractivity?.distanceProp?.updateStateFromModel(
+      updated?.positionInteractivity?.distanceProp,
+      source,
+    );
+    this?.prominenceInteractivity?.prominenceProp?.updateStateFromModel(
+      updated?.prominenceInteractivity?.prominenceProp,
+      source,
+    );
+  }
 }
 
 export class AudioElementSelectionsM implements NGAAudioElementSelections {
   [index: number]: AudioElementSelectionM;
-  length: number;
+  readonly length: number;
   constructor(objects: AudioElementSelectionM[]) {
     this.length = objects.length;
     for (let i = 0; i < this.length; i++) {
       this[i] = objects[i];
+    }
+  }
+
+  isEquivalentStructure(other: AudioElementSelectionsM) {
+    if (this.length !== other.length) {
+      return false;
+    }
+    for (let i = 0; i < this.length; i++) {
+      if (!this[i].isEquivalentStructure(other[i])) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  updateStateFromModel(
+    updated: AudioElementSelectionsM,
+    source = "remote",
+  ): void {
+    for (let i = 0; i < this.length; i++) {
+      this[i].updateStateFromModel(updated[i], source);
     }
   }
 }
@@ -586,6 +919,35 @@ export class PreselectionM extends AudioSceneNodeM implements NGAPreselection {
   ) {
     super(id, labels);
   }
+  isEquivalentStructure(other: PreselectionM): boolean {
+    return (
+      super.isEquivalentStructure(other) &&
+      this.kinds.equals(other.kinds) &&
+      this.language === other.language &&
+      this.selectionPriority === other.selectionPriority &&
+      this.channelLayout?.numObjects === other.channelLayout?.numObjects &&
+      this.audioRenderingIndication === other.audioRenderingIndication &&
+      ((this.audioElements == null && other.audioElements == null) ||
+        (this.audioElements != null &&
+          other.audioElements != null &&
+          this.audioElements.isEquivalentStructure(other.audioElements))) &&
+      ((this.audioElementSelections == null &&
+        other.audioElementSelections == null) ||
+        (this.audioElementSelections != null &&
+          other.audioElementSelections != null &&
+          this.audioElementSelections.isEquivalentStructure(
+            other.audioElementSelections,
+          )))
+    );
+  }
+
+  updateStateFromModel(updated: PreselectionM, source = "remote"): void {
+    this.audioElements.updateStateFromModel(updated.audioElements, source);
+    this.audioElementSelections.updateStateFromModel(
+      updated.audioElementSelections,
+      source,
+    );
+  }
 }
 
 export class AudioSceneM
@@ -593,13 +955,14 @@ export class AudioSceneM
   implements NGAPreselections
 {
   [index: number]: PreselectionM;
-  length: number;
-  private _active: PreselectionM | null = null;
+  readonly length: number;
+  private active: PreselectionM | null = null;
 
   constructor(
     preselections: PreselectionM[],
     activePreselection?: PreselectionM,
     public readonly uuid?: string,
+    public readonly defaultPreselection: PreselectionM | null = activePreselection,
   ) {
     super();
     this.length = preselections.length;
@@ -611,9 +974,9 @@ export class AudioSceneM
       activePreselection != null &&
       preselections.includes(activePreselection)
     ) {
-      this._active = activePreselection;
+      this.active = activePreselection;
     } else if (this.length > 0) {
-      this._active = this[0];
+      this.active = this[0];
     }
   }
 
@@ -623,15 +986,21 @@ export class AudioSceneM
    */
   selectPreselection(preselection: PreselectionM): void {
     const x = this.indexOf(preselection);
-    if (x === -1) return; // preselection unknown
-    // even if the preselection is active, re-select it (might reset something to default!)
-    this._active = preselection;
+    if (x === -1) {
+      return; // preselection unknown
+    }
+    if (this.active === preselection) {
+      // do not re-select active preselection
+      return;
+    }
+    this.active = preselection;
     // dispatch change event
     this.dispatchEvent(
       new CustomEvent("change", {
         detail: {
           type: "preselectionChanged",
           id: preselection.id,
+          source: "local",
         },
       }),
     );
@@ -641,7 +1010,7 @@ export class AudioSceneM
    * @returns currently selected preselection
    */
   getSelectedPreselection(): PreselectionM | null {
-    return this._active;
+    return this.active;
   }
 
   /**
@@ -656,5 +1025,68 @@ export class AudioSceneM
       }
     }
     return -1;
+  }
+
+  isEquivalentStructure(other: AudioSceneM): boolean {
+    if (this.uuid != null && other.uuid != null && this.uuid !== other.uuid) {
+      return false;
+    }
+    if (!super.isEquivalentStructure(other)) {
+      return false;
+    }
+    if (this.length !== other.length) {
+      return false;
+    }
+    if (!this.isDefaultPreselectionEquivalentStructure(other)) {
+      return false;
+    }
+    for (let i = 0; i < this.length; i++) {
+      if (!this[i].isEquivalentStructure(other[i])) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  private isDefaultPreselectionEquivalentStructure(other: AudioSceneM) {
+    return (
+      (this.defaultPreselection == null && other.defaultPreselection == null) ||
+      (this.defaultPreselection != null &&
+        other.defaultPreselection != null &&
+        this.defaultPreselection.isEquivalentStructure(
+          other.defaultPreselection,
+        ))
+    );
+  }
+
+  updateStateFromModel(updated: AudioSceneM, source = "remote"): void {
+    const prevActivePreselection = this.active;
+    const newActivePreselection =
+      this[updated.indexOf(updated.getSelectedPreselection())];
+    const hasChanged = !prevActivePreselection.isEquivalentStructure(
+      newActivePreselection,
+    );
+    // emit event only if the preselection changed
+    if (hasChanged) {
+      this.active = newActivePreselection;
+      // dispatch change event
+      this.dispatchEvent(
+        new CustomEvent("change", {
+          detail: {
+            type: "preselectionChanged",
+            id: this.active.id,
+            source: source,
+          },
+        }),
+      );
+    }
+    this.defaultPreselection?.updateStateFromModel(
+      updated.defaultPreselection,
+      source,
+    );
+    this.active.updateStateFromModel(newActivePreselection);
+    for (let i = 0; i < this.length; i++) {
+      this[i].updateStateFromModel(updated[i], source);
+    }
   }
 }

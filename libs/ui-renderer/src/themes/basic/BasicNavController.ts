@@ -1,7 +1,7 @@
 /*-----------------------------------------------------------------------------
 Software License for The Fraunhofer FDK MPEG-H Software
 
-Copyright (c) 2025 - 2025 Fraunhofer-Gesellschaft zur Förderung der angewandten
+Copyright (c) 2025 - 2026 Fraunhofer-Gesellschaft zur Förderung der angewandten
 Forschung e.V. and Contributors
 All rights reserved.
 
@@ -106,16 +106,29 @@ export class BasicNavController implements NavigationController {
         ),
     );
   }
-  getCurrentTabIndex() {
+
+  getCurrentTabIndex(): number {
     const elements = this.getTabbable();
-    return elements.indexOf(
-      document.getElementsByClassName("basic-focused")[0],
+    const focused = document.querySelector(".basic-focused");
+
+    if (!focused || elements.length === 0) {
+      return 0;
+    }
+
+    const index = elements.findIndex(
+      (el) =>
+        el === focused ||
+        el.contains(focused) ||
+        el.closest(".interactivityitem")?.contains(focused),
     );
+
+    return Math.max(0, index);
   }
   getCurrentFocusIndex() {
     const elements = this.getFocusable();
-    return elements.indexOf(
-      document.getElementsByClassName("basic-focused")[0],
+    return Math.max(
+      0,
+      elements.indexOf(document.getElementsByClassName("basic-focused")?.[0]),
     );
   }
 
@@ -125,7 +138,9 @@ export class BasicNavController implements NavigationController {
    * @returns true if an action (move focus using inbuilt tabbing and arrows) was performed.
    */
   performAction(action: string): boolean {
-    if (!this.supportedActions.includes(action)) return false;
+    if (!this.supportedActions.includes(action)) {
+      return false;
+    }
 
     const tabbable = this.getTabbable() as HTMLInputElement[];
     const basicFocused = document.getElementsByClassName(
@@ -157,13 +172,34 @@ export class BasicNavController implements NavigationController {
       return true;
     } else if (["right", "left"].includes(action)) {
       if (basicFocused[0]?.type === "range") {
-        // slider: mpove the slider and dispatch events
-        let step = parseFloat(basicFocused[0].step) || 1;
+        // slider: move the slider and dispatch events
+        let step = parseFloat(basicFocused[0].dataset.remoteStep);
+        if (Number.isNaN(step)) {
+          step = 1;
+        }
         if (action === "left") {
           step *= -1;
         }
-        const value = parseFloat(basicFocused[0].value) || 0;
-        basicFocused[0].value = (value + step).toString();
+        let value = basicFocused[0].valueAsNumber;
+        if (Number.isNaN(value)) {
+          value = 0;
+        }
+        value += step;
+        let min = parseFloat(basicFocused[0].min);
+        if (Number.isNaN(min)) {
+          min = -180;
+        }
+        let max = parseFloat(basicFocused[0].max);
+        if (Number.isNaN(max)) {
+          max = 180;
+        }
+        if (value < min) {
+          value = min;
+        }
+        if (value > max) {
+          value = max;
+        }
+        basicFocused[0].value = value.toString();
         basicFocused[0].dispatchEvent(new Event("change", { bubbles: true }));
         basicFocused[0].dispatchEvent(new Event("input", { bubbles: true }));
       } else {
@@ -172,14 +208,17 @@ export class BasicNavController implements NavigationController {
         const currentIndex = elements.indexOf(basicFocused[0]);
         const nextIndex =
           action === "right"
-            ? (currentIndex + 1) % elements.length
-            : currentIndex <= 0
-              ? 0
-              : currentIndex - 1;
-        if (elements[nextIndex]?.name !== elements[currentIndex]?.name)
+            ? Math.min(currentIndex + 1, elements.length)
+            : Math.max(currentIndex - 1, 0);
+        if (elements[nextIndex]?.name !== elements[currentIndex]?.name) {
           return false;
-        if (elements[nextIndex].name == null || elements[nextIndex].name == "")
+        }
+        if (
+          elements[nextIndex].name == null ||
+          elements[nextIndex].name == ""
+        ) {
           return false;
+        }
         if (!tabbable.includes(elements[nextIndex])) {
           elements[currentIndex]?.classList.remove("basic-focused");
           elements[nextIndex]?.focus();

@@ -1,0 +1,47 @@
+{
+    "preselection": {
+        "en": "experience"
+    },
+    "language": {
+        "en": "language"
+    },
+    "commentary": {
+        "en": "commentary"
+    },
+    "voice_accessibility": {
+        "en": "voice accessibility"
+    },
+    "music": {
+        "en": "music mix"
+    },
+    "advanced": {
+        "en": "advanced"
+    },
+    "prominence": {
+        "en": "Prominence"
+    },
+    "azimuth": {
+        "en": "Position left | right"
+    },
+    "elevation": {
+        "en": "Position down | up"
+    },
+    "reset": {
+        "en": "Reset"
+    },
+    "not available": {
+        "en": "not available"
+    },
+    "left": {
+        "en": "left"
+    },
+    "right": {
+        "en": "right"
+    },
+    "decrease": {
+        "en": "decrease"
+    },
+    "increase": {
+        "en": "increase"
+    }
+}

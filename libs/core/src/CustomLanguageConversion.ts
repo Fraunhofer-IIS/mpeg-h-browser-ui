@@ -1,7 +1,7 @@
 /*-----------------------------------------------------------------------------
 Software License for The Fraunhofer FDK MPEG-H Software
 
-Copyright (c) 2025 - 2025 Fraunhofer-Gesellschaft zur Förderung der angewandten
+Copyright (c) 2025 - 2026 Fraunhofer-Gesellschaft zur Förderung der angewandten
 Forschung e.V. and Contributors
 All rights reserved.
 
@@ -81,69 +81,62 @@ amm-info@iis.fraunhofer.de
 -----------------------------------------------------------------------------*/
 
 import {
-  LanguageNameConverter,
   iso639_1_to_639_2_B,
+  LanguageNameConverter,
+  toBCP47,
 } from "../lib/LanguageTypes";
 
 export const getDisplayName: LanguageNameConverter = (
   inputLang: string,
   outLabelLang?: string,
 ) => {
-  let queryLang;
   if (!inputLang || inputLang.length < 2) {
     return undefined;
   }
-  if (inputLang.length !== 3) {
-    queryLang = iso639_1_to_639_2_B.get(inputLang.toLowerCase());
-    if (!queryLang) return undefined;
-  } else {
-    queryLang = inputLang.toLowerCase();
-  }
+  inputLang = toBCP47(inputLang);
+  outLabelLang = toBCP47(outLabelLang);
 
   // collect labels
-  const queryLangLabels = LanguageNames.get(queryLang);
-  if (!queryLangLabels) return undefined;
+  const inputLangLabels = LanguageNames.get(
+    iso639_1_to_639_2_B.get(inputLang) ?? inputLang,
+  );
+  if (!inputLangLabels) {
+    return undefined;
+  }
 
-  // prio list
+  // prio list, default to English
   const prioList = [1];
-  if (!outLabelLang || outLabelLang.length < 2) {
+  if (!outLabelLang) {
     // use language of the input_language (endonym)
     prioList.push(4);
-  } else if (outLabelLang.length !== 3) {
-    outLabelLang = iso639_1_to_639_2_B.get(outLabelLang.substring(0, 2));
-    if (!outLabelLang) {
-      prioList.push(4);
-    } else {
-      switch (outLabelLang.toLowerCase()) {
-        case queryLang:
-          prioList.push(4);
-          break;
-        case "eng":
-        case "enm":
-        case "ang":
-        case "cpe":
-          prioList.push(1);
-          break;
-        case "fra":
-        case "fre":
-        case "frm":
-        case "fro":
-        case "cpf":
-          prioList.push(2);
-          break;
-        case "ger":
-        case "deu":
-        case "gmh":
-        case "goh":
-        case "gsw":
-        case "nds":
-          prioList.push(3);
-          break;
-      }
+  } else {
+    switch (outLabelLang) {
+      case inputLang:
+        prioList.push(4);
+        break;
+      case "en":
+      case "enm":
+      case "ang":
+      case "cpe":
+        prioList.push(1);
+        break;
+      case "fr":
+      case "frm":
+      case "fro":
+      case "cpf":
+        prioList.push(2);
+        break;
+      case "de":
+      case "gmh":
+      case "goh":
+      case "gsw":
+      case "nds":
+        prioList.push(3);
+        break;
     }
   }
   // get Language name of highest prio
-  return queryLangLabels[prioList.pop()];
+  return inputLangLabels[prioList[prioList.length - 1]];
 };
 
 /**

@@ -1,7 +1,7 @@
 /*-----------------------------------------------------------------------------
 Software License for The Fraunhofer FDK MPEG-H Software
 
-Copyright (c) 2025 - 2025 Fraunhofer-Gesellschaft zur Förderung der angewandten
+Copyright (c) 2025 - 2026 Fraunhofer-Gesellschaft zur Förderung der angewandten
 Forschung e.V. and Contributors
 All rights reserved.
 
@@ -131,6 +131,17 @@ export class AdvancedSelectionView extends PopupView {
           this.selectionView.setActive(
             this.viewModel.getSelectedAudioElement(),
           );
+          for (let i = 0; i < this.viewModel.audioElements.length; i++) {
+            this.unregisterComponentFirstLayer(this.selectionView.buttons[i]);
+          }
+          for (let i = 0; i < this.viewModel.audioElements.length; i++) {
+            this.registerComponentFirstLayer(
+              this.selectionView.buttons[i],
+              this.viewModel.audioElements.indexOf(
+                this.viewModel.getSelectedAudioElement(),
+              ) === i,
+            );
+          }
         }
       },
       { signal: this.ac.signal },
@@ -156,12 +167,12 @@ export class AdvancedSelectionView extends PopupView {
   }
 
   dispose() {
-    super.dispose();
     // clear navigation graph
     if (this.selectionView?.buttons != null) {
       for (const btn of this.selectionView.buttons) {
         this.unregisterComponentFirstLayer(btn);
       }
     }
+    super.dispose();
   }
 }

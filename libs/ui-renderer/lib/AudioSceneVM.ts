@@ -1,7 +1,7 @@
 /*-----------------------------------------------------------------------------
 Software License for The Fraunhofer FDK MPEG-H Software
 
-Copyright (c) 2025 - 2025 Fraunhofer-Gesellschaft zur Förderung der angewandten
+Copyright (c) 2025 - 2026 Fraunhofer-Gesellschaft zur Förderung der angewandten
 Forschung e.V. and Contributors
 All rights reserved.
 
@@ -91,8 +91,10 @@ import {
   PreselectionM,
   AudioSceneM,
   KindM,
+  Localizable,
+  to639_2B,
+  toBCP47,
 } from "@wmt/mpeg-h-browser-ui-core";
-import { Localizable } from "../../core/dist/lib/lib/LanguageTypes";
 
 /**
  * Base class for all ViewModels that have some sort of interactivity and can emit events.
@@ -116,7 +118,9 @@ export abstract class InteractiveVM extends EventTarget {
     typeOverride?: string,
     detailOverride?: { [k: string]: unknown },
   ): void {
-    if (source == null) return;
+    if (source == null) {
+      return;
+    }
     source.addEventListener(
       "change",
       (e: Event) => {
@@ -146,11 +150,14 @@ export abstract class InteractiveVM extends EventTarget {
   }
 
   getLabelInLang(lang: string): Localizable {
-    return this.model.labels.getLabelInLang(lang).label;
+    return this.model.labels.getLabelInLang(lang)?.label;
   }
 
   getLabelPreferredInLangs(langs: string[]): Localizable {
     const labels = this.model.labels;
+    if (labels == null) {
+      return null;
+    }
     for (const lang of langs) {
       const inLang = labels.getLabelInLang(lang);
       if (inLang != null) {
@@ -248,19 +255,23 @@ export class PositionInteractivityVM extends InteractiveVM {
    */
   moveDirection(dir: "left" | "right" | "up" | "down"): boolean {
     let tomove: NumericPropertyM;
-    if (dir == "left" || dir == "right") {
+    if (dir === "left" || dir === "right") {
       tomove = this.model.azimuthProp;
-    } else if (dir == "up" || dir == "down") {
+    } else if (dir === "up" || dir === "down") {
       tomove = this.model.elevationProp;
     }
-    if (!tomove) return false;
+    if (!tomove) {
+      return false;
+    }
     let step = tomove.domainInfo["step"] ?? 1;
-    if (dir == "right" || dir == "down") {
+    if (dir === "right" || dir === "down") {
       step = -step;
     }
     const oldval = tomove.value;
     tomove.value = oldval + step;
-    if (tomove.value !== oldval) return true;
+    if (tomove.value !== oldval) {
+      return true;
+    }
     return false;
   }
 }
@@ -283,6 +294,9 @@ export class ProminenceInteractivityVM extends InteractiveVM {
   setProminence(v: number) {
     this.model.setProminence(v);
   }
+  reset(): void {
+    this.model.setProminence(this.model.defaultProminence);
+  }
   getDomainInfo() {
     return this.model.getDomainInfo();
   }
@@ -299,6 +313,7 @@ export class AudioElementVM extends InteractiveVM {
   constructor(
     public readonly model: AudioElementM,
     repository: SceneRepository,
+    public broadcasting: boolean = true,
   ) {
     super(model, repository);
     this._positionInteractivity = model.positionInteractivity
@@ -312,19 +327,26 @@ export class AudioElementVM extends InteractiveVM {
       this._positionInteractivity?.addEventListener(
         "change",
         (e: Event) => {
+          if (!this.broadcasting) {
+            return;
+          }
           const detail = (e as CustomEvent).detail;
-          if (detail.type === "azimuthChanged")
+          if (detail?.source === "remote") {
+            return;
+          }
+          if (detail.type === "azimuthChanged") {
             this.repository.applyAction({
               type: "setAudioElementAzimuth",
               elementId: this.model.id,
               value: detail.value,
             });
-          else if (detail.type === "elevationChanged")
+          } else if (detail.type === "elevationChanged") {
             this.repository.applyAction({
               type: "setAudioElementElevation",
               elementId: this.model.id,
               value: detail.value,
             });
+          }
         },
         { signal: this.ac.signal },
       );
@@ -332,13 +354,20 @@ export class AudioElementVM extends InteractiveVM {
       this._prominenceInteractivity?.addEventListener(
         "change",
         (e: Event) => {
+          if (!this.broadcasting) {
+            return;
+          }
           const detail = (e as CustomEvent).detail;
-          if (detail.type === "prominenceChanged")
+          if (detail?.source === "remote") {
+            return;
+          }
+          if (detail.type === "prominenceChanged") {
             this.repository.applyAction({
               type: "setAudioElementProminence",
               elementId: this.model.id,
               value: detail.value,
             });
+          }
         },
         { signal: this.ac.signal },
       );
@@ -348,13 +377,20 @@ export class AudioElementVM extends InteractiveVM {
         this.addEventListener(
           "change",
           (e: Event) => {
+            if (!this.broadcasting) {
+              return;
+            }
             const detail = (e as CustomEvent).detail;
-            if (detail.type === "enabledChanged")
+            if (detail?.source === "remote") {
+              return;
+            }
+            if (detail.type === "enabledChanged") {
               this.repository.applyAction({
                 type: "setAudioElementMute",
                 elementId: this.model.id,
                 enable: detail.value,
               });
+            }
           },
           { signal: this.ac.signal },
         );
@@ -406,16 +442,29 @@ export class AudioElementVM extends InteractiveVM {
   disable() {
     this.model?.disable();
   }
+  reset() {
+    if (this.model.isDefaultEnabled != null) {
+      if (this.model.isDefaultEnabled) {
+        this.model.enable();
+      } else {
+        this.model.disable();
+      }
+    }
+    this._positionInteractivity?.reset();
+    this._prominenceInteractivity?.reset();
+  }
   getKindLabelInLang(lang: string): Localizable | null {
-    // returns the label of the first kind instance that has any labels in the queried language
+    // returns the label of the first kind instance that has any labels in the queried language or falls back to the first label of the kind instance.
     for (let i = 0; i < this.model.kinds.length; i++) {
       const descriptionLabels = this.model.kinds[i].kindDescription;
       if (descriptionLabels == null || descriptionLabels?.length === 0) {
         continue;
       }
-      return descriptionLabels.getLabelInLang(lang).label;
+      return (
+        descriptionLabels.getLabelInLang(lang)?.label ??
+        descriptionLabels[0].label
+      );
     }
-    return null;
   }
   getContentLanguage(): string | null {
     return this.model.language;
@@ -448,6 +497,7 @@ export class AudioElementSelectionVM extends InteractiveVM {
   constructor(
     public readonly model: AudioElementSelectionM,
     repository: SceneRepository,
+    public broadcasting: boolean = true,
   ) {
     super(model, repository);
     this._positionInteractivity = model.positionInteractivity
@@ -459,38 +509,54 @@ export class AudioElementSelectionVM extends InteractiveVM {
 
     for (let i = 0; i < model.audioElements.length; i++) {
       const audioElement = model.audioElements[i];
-      this.audioElements.push(new AudioElementVM(audioElement, repository));
+      this.audioElements.push(
+        new AudioElementVM(audioElement, repository, broadcasting),
+      );
     }
 
     this.relayChangeEvents(this.model);
     // add event listener for switching
     this.addEventListener("change", (e: Event) => {
+      if (!this.broadcasting) {
+        return;
+      }
       const detail = (e as CustomEvent).detail;
-      if (detail.type === "audioElementSelectionChanged")
+      if (detail?.source === "remote") {
+        return;
+      }
+      if (detail.type === "audioElementSelectionChanged") {
         this.repository.applyAction({
           type: "selectAudioElementSelection",
           groupId: detail.parentId,
           elementId: detail.id,
         });
+      }
     });
     // add further event listeners, but only to interactivity options that are available
     if (this.hasInteractivity()) {
       this._positionInteractivity?.addEventListener(
         "change",
         (e: Event) => {
+          if (!this.broadcasting) {
+            return;
+          }
           const detail = (e as CustomEvent).detail;
-          if (detail.type === "azimuthChanged")
+          if (detail?.source === "remote") {
+            return;
+          }
+          if (detail.type === "azimuthChanged") {
             this.repository.applyAction({
               type: "setAudioElementSelectionAzimuth",
               groupId: this.model.id,
               value: detail.value,
             });
-          else if (detail.type === "elevationChanged")
+          } else if (detail.type === "elevationChanged") {
             this.repository.applyAction({
               type: "setAudioElementSelectionElevation",
               groupId: this.model.id,
               value: detail.value,
             });
+          }
         },
         { signal: this.ac.signal },
       );
@@ -498,13 +564,20 @@ export class AudioElementSelectionVM extends InteractiveVM {
       this._prominenceInteractivity?.addEventListener(
         "change",
         (e: Event) => {
+          if (!this.broadcasting) {
+            return;
+          }
           const detail = (e as CustomEvent).detail;
-          if (detail.type === "prominenceChanged")
+          if (detail?.source === "remote") {
+            return;
+          }
+          if (detail.type === "prominenceChanged") {
             this.repository.applyAction({
               type: "setAudioElementSelectionProminence",
               groupId: this.model.id,
               value: detail.value,
             });
+          }
         },
         { signal: this.ac.signal },
       );
@@ -527,6 +600,7 @@ export class AudioElementSelectionVM extends InteractiveVM {
    */
   hasInteractivity(): boolean {
     return (
+      this.audioElements?.length > 1 ||
       this.hasMutingControl() ||
       this.hasProminenceControl() ||
       this.hasAzimuthControl() ||
@@ -596,18 +670,33 @@ export class AudioElementSelectionVM extends InteractiveVM {
   getSelectedKindLabelInLang(lang: string): Localizable | null {
     // returns the label of the first kind instance that has any labels of the currently selected audio element in the queried language
     let audioObject = this.model.getSelectedAudioElement();
-    if (audioObject == null && this.model.audioElements?.length > 0)
+    if (audioObject == null && this.model.audioElements?.length > 0) {
       audioObject = this.model.audioElements[0];
+    }
     if (audioObject != null) {
       for (let i = 0; i < audioObject.kinds.length; i++) {
         const descriptionLabels = audioObject.kinds[i].kindDescription;
         if (descriptionLabels == null || descriptionLabels?.length === 0) {
           continue;
         }
-        return descriptionLabels.getLabelInLang(lang).label;
+        return (
+          descriptionLabels.getLabelInLang(lang)?.label ??
+          descriptionLabels[0].label
+        );
       }
     }
     return null;
+  }
+
+  reset() {
+    this.positionInteractivity?.reset();
+    this.prominenceInteractivity?.reset();
+    for (const audioElement of this.audioElements) {
+      audioElement.reset();
+    }
+    this.model.selectAudioElement(
+      this.model.defaultElement ?? this.model.audioElements?.[0],
+    );
   }
 }
 
@@ -618,11 +707,16 @@ export class PreselectionVM extends InteractiveVM {
   constructor(
     readonly model: PreselectionM,
     repository: SceneRepository,
+    private _broadcasting: boolean = true,
   ) {
     super(model, repository);
     for (let i = 0; i < this.model.audioElements.length; i++) {
       this.audioElements.push(
-        new AudioElementVM(this.model.audioElements[i], this.repository),
+        new AudioElementVM(
+          this.model.audioElements[i],
+          this.repository,
+          this._broadcasting,
+        ),
       );
     }
     for (let i = 0; i < this.model.audioElementSelections.length; i++) {
@@ -630,6 +724,7 @@ export class PreselectionVM extends InteractiveVM {
         new AudioElementSelectionVM(
           this.model.audioElementSelections[i],
           this.repository,
+          this._broadcasting,
         ),
       );
     }
@@ -637,15 +732,19 @@ export class PreselectionVM extends InteractiveVM {
 
   hasInteractivity(): boolean {
     for (const ae of this.audioElements) {
-      if (ae.hasInteractivity()) return true;
+      if (ae.hasInteractivity()) {
+        return true;
+      }
     }
     for (const aes of this.audioElementSelections) {
-      if (aes.hasInteractivity()) return true;
+      if (aes.hasInteractivity()) {
+        return true;
+      }
     }
     return false;
   }
 
-  getContentLanguge(): string | null {
+  getContentLanguage(): string | null {
     // return explicit preselection language if available in model
     if (this.model.language != null) {
       return this.model.language;
@@ -653,21 +752,25 @@ export class PreselectionVM extends InteractiveVM {
     // fallback to first found language in audio elements
     for (const ae of this.audioElements) {
       const l = ae.getContentLanguage();
-      if (l != null) return l;
+      if (l != null) {
+        return l;
+      }
     }
     return null;
   }
 
   getKindLabelInLang(lang: string): Localizable | null {
-    // returns the label of the first kind instance that has any labels in the queried language
+    // returns the label of the first kind instance that has any labels in the queried language or falls back to the first label of the kind instance.
     for (let i = 0; i < this.model.kinds.length; i++) {
       const descriptionLabels = this.model.kinds[i].kindDescription;
       if (descriptionLabels == null || descriptionLabels?.length === 0) {
         continue;
       }
-      return descriptionLabels.getLabelInLang(lang).label;
+      return (
+        descriptionLabels.getLabelInLang(lang)?.label ??
+        descriptionLabels[0].label
+      );
     }
-    return null;
   }
 
   getSwitchableElementsOfKinds(
@@ -678,7 +781,9 @@ export class PreselectionVM extends InteractiveVM {
       // audio element selections
       for (const aes of this.audioElementSelections) {
         const aesSelable = aes.getSelectableAudioElements();
-        if (aesSelable.length < 1) continue;
+        if (aesSelable.length < 1) {
+          continue;
+        }
         const matching: AudioElementVM[] = [];
         for (let i = 0; i < aesSelable.length; i++) {
           if (aesSelable[i].isOfKind(kind)) {
@@ -704,19 +809,19 @@ export class PreselectionVM extends InteractiveVM {
       filterFunction = (a: AudioElementVM | AudioElementSelectionVM) => {
         return a.hasInteractivity();
       };
-    } else if (filter == "prominence") {
+    } else if (filter === "prominence") {
       filterFunction = (a: AudioElementVM | AudioElementSelectionVM) => {
         return a.hasProminenceControl();
       };
-    } else if (filter == "azimuth") {
+    } else if (filter === "azimuth") {
       filterFunction = (a: AudioElementVM | AudioElementSelectionVM) => {
         return a.hasAzimuthControl();
       };
-    } else if (filter == "elevation") {
+    } else if (filter === "elevation") {
       filterFunction = (a: AudioElementVM | AudioElementSelectionVM) => {
         return a.hasElevationControl();
       };
-    } else if (filter == "distance") {
+    } else if (filter === "distance") {
       filterFunction = (a: AudioElementVM | AudioElementSelectionVM) => {
         return a.hasDistanceControl();
       };
@@ -739,14 +844,26 @@ export class PreselectionVM extends InteractiveVM {
     return rslt;
   }
 
-  reset(globalReset: boolean = false) {
-    if (globalReset) {
-      this.repository.applyAction({ type: "reset", globalReset: globalReset });
-    } else {
-      this.repository.applyAction({
-        type: "selectPreselection",
-        preselectionId: this.model.id,
-      });
+  set broadcasting(broadcasting: boolean) {
+    this._broadcasting = broadcasting;
+    for (const ae of this.audioElements) {
+      ae.broadcasting = broadcasting;
+    }
+    for (const aes of this.audioElementSelections) {
+      aes.broadcasting = broadcasting;
+    }
+  }
+
+  get broadcasting() {
+    return this._broadcasting;
+  }
+
+  reset() {
+    for (const ae of this.audioElements) {
+      ae.reset();
+    }
+    for (const aes of this.audioElementSelections) {
+      aes.reset();
     }
   }
 }
@@ -756,6 +873,7 @@ export class AudioSceneVM extends InteractiveVM {
   constructor(
     readonly model: AudioSceneM,
     repository: SceneRepository,
+    public broadcasting: boolean = true,
   ) {
     super(model, repository);
     this.relayChangeEvents(this.model);
@@ -763,11 +881,35 @@ export class AudioSceneVM extends InteractiveVM {
       "change",
       (e: Event) => {
         const detail = (e as CustomEvent).detail;
-        if (detail.type === "preselectionChanged")
+        if (detail.type === "preselectionChanged") {
+          for (const presel of this._preselections) {
+            presel.broadcasting = presel.model.id === detail.id;
+          }
+          if (!this.broadcasting) {
+            return;
+          }
+          if (detail?.source === "remote") {
+            return;
+          }
           this.repository.applyAction({
             type: "selectPreselection",
             preselectionId: detail.id,
           });
+        } else if (detail.type === "reset") {
+          for (const presel of this._preselections) {
+            presel.broadcasting =
+              presel.model === model.getSelectedPreselection();
+          }
+          if (!this.broadcasting) {
+            return;
+          }
+          if (detail?.source === "remote") {
+            return;
+          }
+          this.repository.applyAction({
+            type: "reset",
+          });
+        }
       },
       { signal: this.ac.signal },
     );
@@ -778,7 +920,11 @@ export class AudioSceneVM extends InteractiveVM {
     this._preselections = [];
     for (let i = 0; i < this.model.length; i++) {
       this._preselections.push(
-        new PreselectionVM(this.model[i], this.repository),
+        new PreselectionVM(
+          this.model[i],
+          this.repository,
+          this.model.getSelectedPreselection() === this.model[i],
+        ),
       );
       // updated model: dispatch event for view
       this.dispatchEvent(new CustomEvent("modelUpdated"));
@@ -791,15 +937,19 @@ export class AudioSceneVM extends InteractiveVM {
 
   get selectedPreselection() {
     const selected = this.model.getSelectedPreselection();
-    for (const p of this._preselections) {
-      if (p.model === selected) return p;
+    for (const presel of this._preselections) {
+      if (presel.model === selected) {
+        return presel;
+      }
     }
   }
 
   get selectedPreselectionIndex() {
     const selected = this.model.getSelectedPreselection();
     for (let i = 0; i < this._preselections.length; i++) {
-      if (this._preselections[i].model === selected) return i;
+      if (this._preselections[i].model === selected) {
+        return i;
+      }
     }
   }
 
@@ -808,7 +958,39 @@ export class AudioSceneVM extends InteractiveVM {
   }
 
   reset() {
-    this.repository.applyAction({ type: "reset", globalReset: true });
+    if (this.repository.supportedActions.includes("reset")) {
+      this.repository.applyAction({ type: "reset" });
+    }
+    for (const presel of this._preselections) {
+      presel.reset();
+    }
+    this.model.selectPreselection(this.model.defaultPreselection);
+    if (this.repository.supportedActions.includes("reset")) {
+      this.repository.applyAction({ type: "reset" });
+    }
+  }
+
+  setPreferredAudioLanguage(lang: string) {
+    this.repository.applyAction({
+      type: "selectPreferredAudioLanguage",
+      languageCode: to639_2B(lang),
+      priority: 0,
+    });
+    for (const presel of this._preselections) {
+      if (!presel.broadcasting) {
+        for (const aes of presel.audioElementSelections) {
+          if (aes.broadcasting) {
+            continue;
+          }
+          for (const selOption of aes.audioElements) {
+            if (toBCP47(selOption.getContentLanguage()) === toBCP47(lang)) {
+              aes.selectAudioElement(selOption);
+              break;
+            }
+          }
+        }
+      }
+    }
   }
 
   hasInteractivity() {

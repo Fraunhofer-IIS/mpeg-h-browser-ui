@@ -1,7 +1,7 @@
 /*-----------------------------------------------------------------------------
 Software License for The Fraunhofer FDK MPEG-H Software
 
-Copyright (c) 2025 - 2025 Fraunhofer-Gesellschaft zur Förderung der angewandten
+Copyright (c) 2025 - 2026 Fraunhofer-Gesellschaft zur Förderung der angewandten
 Forschung e.V. and Contributors
 All rights reserved.
 
@@ -81,12 +81,7 @@ amm-info@iis.fraunhofer.de
 -----------------------------------------------------------------------------*/
 
 import { XmlSceneParser } from "./XmlModelParser";
-import {
-  Action,
-  SceneRepository,
-  SceneConnector,
-  ActionConnector,
-} from "../lib/SceneRepository";
+import { Action, SceneRepository } from "../lib/SceneRepository";
 import { AudioSceneM } from "./NGAModels";
 import { to639_2B } from "../lib/LanguageTypes";
 interface DispatchParams {
@@ -99,33 +94,202 @@ interface DispatchParams {
 
 type XmlVersion = "9.0" | "10.0" | "11.0";
 
-export class XmlSceneConnector implements SceneConnector {
-  constructor(private xmlPayload?: string | ArrayBuffer) {}
-  // get current scene.
+export class XmlSceneRepository extends EventTarget implements SceneRepository {
+  uuid: string;
+  version: XmlVersion;
 
-  fetchScene(
-    __uuid: string,
+  throttleDelayMs: number = 333;
+  onAction: (
+    actionString: string,
+  ) => Promise<string | ArrayBuffer | void> | string | ArrayBuffer | void;
+  private dispatchQueue: DispatchParams[] = [];
+  private lastDispatchedTime: number = 0;
+  private isThrottling: boolean = false;
+  private currentPromise: Promise<unknown> | null = null;
+  private currentResolve: ((value: unknown) => void) | null = null;
+
+  private static readonly systemSettingTypes = [
+    0, 10, 11, 12, 20, 21, 31, 70, 71,
+  ];
+
+  constructor(
+    private getCurrent: () => AudioSceneM,
+    private setCurrent: (current: AudioSceneM) => void | null = null,
+    public source: string | null = null,
+  ) {
+    super();
+  }
+
+  get supportedActions() {
+    return [
+      "reset",
+      "selectPreselection",
+      "setAudioElementMute",
+      "setAudioElementProminence",
+      "setAudioElementAzimuth",
+      "setAudioElementElevation",
+      "selectAudioElementSelection",
+      "setAudioElementSelectionMute",
+      "setAudioElementSelectionProminence",
+      "setAudioElementSelectionAzimuth",
+      "setAudioElementSelectionElevation",
+      "selectPreferredDisplayLanguage",
+      "selectPreferredAudioLanguage",
+    ];
+  }
+
+  private toStringPayload(
+    payload: string | ArrayBuffer,
+    charset = "utf-8",
+  ): string {
+    if (typeof payload === "string") {
+      return payload;
+    }
+    return new TextDecoder(charset).decode(new Uint8Array(payload));
+  }
+
+  async load(options?: { signal?: AbortSignal }): Promise<AudioSceneM> | null {
+    if (this.source == null) {
+      return Promise.resolve(this.getCurrent());
+    }
+    try {
+      const response = await fetch(this.source, { signal: options?.signal });
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      const payload = await response.text();
+      return Promise.resolve(this.loadFromPayload(payload));
+    } catch (error) {
+      console.error("Client error FETCHing current scene: ", error);
+      return Promise.resolve(this.getCurrent());
+    }
+  }
+
+  loadFromPayload(payload: string | ArrayBuffer): Promise<AudioSceneM> {
+    const { uuid, version, ngaInteractivity } = XmlSceneParser.parseScene(
+      this.toStringPayload(payload),
+    );
+    this.uuid = uuid;
+    this.version = version;
+    this.setCurrent(ngaInteractivity);
+    return Promise.resolve(ngaInteractivity);
+  }
+
+  setOnAction(
+    target: (
+      actionString: string,
+    ) => Promise<string | ArrayBuffer | void> | string | ArrayBuffer | void,
+  ) {
+    this.onAction = target;
+  }
+
+  async applyAction(
+    action: Action,
+    options?: { signal?: AbortSignal },
+  ): Promise<AudioSceneM> | null {
+    const returned_data = await this.sendAction(action, this.uuid, options);
+    // If we get a response with the newest XML content, load it again directly.
+    if (
+      returned_data != null &&
+      (typeof returned_data === "string" ||
+        returned_data instanceof ArrayBuffer)
+    ) {
+      return Promise.resolve(this.loadFromPayload(returned_data));
+    } else {
+      return null;
+    }
+  }
+
+  async sendAction(
+    action: Action,
+    uuid: string,
     __options?: { signal?: AbortSignal },
-  ): Promise<string | ArrayBuffer> {
-    // UUID is ignored, as XML always contains only one (the current) audio scene. Directly return it.
-    return Promise.resolve(this.xmlPayload);
+  ): Promise<unknown> {
+    const dispatchParams = XmlSceneRepository.toDispatchParams(action);
+
+    queueEdit: if (
+      dispatchParams.actionType == 0 ||
+      dispatchParams.actionType == 30
+    ) {
+      // reset or preset change: delete all previous enqued actions
+      // this also deletes selectPreferredDisplayLanguage and selectPreferredAudioLanguage actions!
+      this.dispatchQueue = [dispatchParams];
+    } else {
+      for (const [index, enquedItem] of this.dispatchQueue.entries()) {
+        if (
+          enquedItem.actionType == dispatchParams.actionType &&
+          enquedItem?.paramInt == dispatchParams?.paramInt
+        ) {
+          // update enqued action with same type on same element with new values
+          if (enquedItem?.paramBool != null) {
+            enquedItem.paramBool = dispatchParams?.paramBool;
+          }
+          if (enquedItem?.paramFloat != null) {
+            enquedItem.paramFloat = dispatchParams?.paramFloat;
+          }
+          if (enquedItem?.paramText != null) {
+            enquedItem.paramText = dispatchParams?.paramText;
+          }
+          // move the updated action to the end of the queue
+          this.dispatchQueue.push(this.dispatchQueue.splice(index, 1)[0]);
+          break queueEdit;
+        }
+      }
+      // default: append to queue
+      this.dispatchQueue.push(dispatchParams);
+    }
+
+    // wait for promise if currently throttling
+    if (this.isThrottling && this.currentPromise != null) {
+      return this.currentPromise;
+    }
+
+    this.isThrottling = true;
+    this.currentPromise = new Promise((resolve) => {
+      this.currentResolve = resolve;
+    });
+    this.processQueue(uuid);
+
+    return this.currentPromise;
   }
 
-  // manually update the scene.
-  updateScene(xmlPayload: string | ArrayBuffer) {
-    this.xmlPayload = xmlPayload;
+  private async processQueue(uuid: string): Promise<void> {
+    while (this.dispatchQueue.length > 0) {
+      const now = Date.now();
+      const timeSinceLastDispatch = now - this.lastDispatchedTime;
+
+      if (timeSinceLastDispatch >= this.throttleDelayMs) {
+        this.lastDispatchedTime = now;
+        const uiMessage = XmlSceneRepository.assembleUiEvent(
+          uuid,
+          this.version,
+          this.dispatchQueue.shift(),
+        );
+        const result = await this.onAction(uiMessage);
+        if (this.currentResolve) {
+          this.currentResolve(result);
+        }
+        this.currentPromise = null;
+        this.currentResolve = null;
+      } else {
+        const waitTime = this.throttleDelayMs - timeSinceLastDispatch;
+        await new Promise((resolve) => setTimeout(resolve, waitTime));
+      }
+    }
+    this.isThrottling = false;
   }
-}
-export class XmlActionConnector implements ActionConnector {
-  onAction: (actionString: string) => Promise<unknown> | void;
-  constructor(private version: XmlVersion = "9.0") {}
-  private assembleUiEvent(
+
+  private static assembleUiEvent(
     uuid: string,
     version: XmlVersion,
     params: DispatchParams,
   ): string {
     if (params == null) {
       return null;
+    }
+    if (XmlSceneRepository.systemSettingTypes.includes(params.actionType)) {
+      // system settings
+      uuid = "00000000-0000-0000-0000-000000000000";
     }
     const paramStrings: string[] = [];
     Object.entries(params).forEach(([param, value]) => {
@@ -134,150 +298,75 @@ export class XmlActionConnector implements ActionConnector {
     const actionString = `<ActionEvent uuid="${uuid}" version="${version}" ${paramStrings.join(" ")} />`;
     return actionString;
   }
+
   private static toDispatchParams(action: Action): DispatchParams {
     const params: DispatchParams = { actionType: undefined };
-    if (action.type == "reset") {
-      if (!action.globalReset) {
-        return null;
-      }
-      params.actionType = 0;
-    } else if (action.type == "selectPreselection") {
-      params.actionType = 30;
-      params.paramInt = action.preselectionId;
-    } else if (action.type == "setAudioElementMute") {
-      params.actionType = 40;
-      params.paramInt = action.elementId;
-      params.paramBool = action.enable;
-    } else if (action.type == "setAudioElementProminence") {
-      params.actionType = 41;
-      params.paramInt = action.elementId;
-      params.paramFloat = action.value;
-    } else if (action.type == "setAudioElementAzimuth") {
-      params.actionType = 42;
-      params.paramInt = action.elementId;
-      params.paramFloat = action.value;
-    } else if (action.type == "setAudioElementElevation") {
-      params.actionType = 43;
-      params.paramInt = action.elementId;
-      params.paramFloat = action.value;
-    } else if (action.type == "selectAudioElementSelection") {
-      params.actionType = 60;
-      params.paramInt = action.groupId;
-      params.paramFloat = action.elementId;
-    } else if (action.type == "setAudioElementSelectionMute") {
-      params.actionType = 61;
-      params.paramInt = action.groupId;
-      params.paramBool = action.enable;
-    } else if (action.type == "setAudioElementSelectionProminence") {
-      params.actionType = 62;
-      params.paramInt = action.groupId;
-      params.paramFloat = action.value;
-    } else if (action.type == "setAudioElementSelectionAzimuth") {
-      params.actionType = 63;
-      params.paramInt = action.groupId;
-      params.paramFloat = action.value;
-    } else if (action.type == "setAudioElementSelectionElevation") {
-      params.actionType = 64;
-      params.paramInt = action.groupId;
-      params.paramFloat = action.value;
-    } else if (action.type == "selectPreferredDisplayLanguage") {
-      params.actionType = 71;
-      params.paramText = to639_2B(action.languageCode);
-    } else if (action.type == "selectPreferredAudioLanguage") {
-      params.actionType = 70;
-      params.paramText = to639_2B(action.languageCode);
+    switch (action.type) {
+      case "reset":
+        params.actionType = 0;
+        break;
+      case "selectPreselection":
+        params.actionType = 30;
+        params.paramInt = action.preselectionId;
+        break;
+      case "setAudioElementMute":
+        params.actionType = 40;
+        params.paramInt = action.elementId;
+        params.paramBool = action.enable;
+        break;
+      case "setAudioElementProminence":
+        params.actionType = 41;
+        params.paramInt = action.elementId;
+        params.paramFloat = action.value;
+        break;
+      case "setAudioElementAzimuth":
+        params.actionType = 42;
+        params.paramInt = action.elementId;
+        params.paramFloat = action.value;
+        break;
+      case "setAudioElementElevation":
+        params.actionType = 43;
+        params.paramInt = action.elementId;
+        params.paramFloat = action.value;
+        break;
+      case "selectAudioElementSelection":
+        params.actionType = 60;
+        params.paramInt = action.groupId;
+        params.paramFloat = action.elementId;
+        break;
+      case "setAudioElementSelectionMute":
+        params.actionType = 61;
+        params.paramInt = action.groupId;
+        params.paramBool = action.enable;
+        break;
+      case "setAudioElementSelectionProminence":
+        params.actionType = 62;
+        params.paramInt = action.groupId;
+        params.paramFloat = action.value;
+        break;
+      case "setAudioElementSelectionAzimuth":
+        params.actionType = 63;
+        params.paramInt = action.groupId;
+        params.paramFloat = action.value;
+        break;
+      case "setAudioElementSelectionElevation":
+        params.actionType = 64;
+        params.paramInt = action.groupId;
+        params.paramFloat = action.value;
+        break;
+      case "selectPreferredDisplayLanguage":
+        params.actionType = 71;
+        params.paramText = to639_2B(action.languageCode) ?? action.languageCode;
+        params.paramInt = action.priority;
+        break;
+      case "selectPreferredAudioLanguage":
+        params.actionType = 70;
+        params.paramText = to639_2B(action.languageCode) ?? action.languageCode;
+        params.paramInt = action.priority;
+        break;
+      default:
+        break;
     }
     return params;
-  }
-  setVersion(version: XmlVersion) {
-    this.version = version;
-  }
-
-  async sendAction(
-    action: Action,
-    uuid: string,
-    __options?: { signal?: AbortSignal },
-  ): Promise<unknown> {
-    const uiMessage = this.assembleUiEvent(
-      uuid,
-      this.version,
-      XmlActionConnector.toDispatchParams(action),
-    );
-    return await this.onAction(uiMessage);
-  }
-}
-
-export class XmlSceneRepository extends EventTarget implements SceneRepository {
-  uuid: string;
-  version: XmlVersion;
-  constructor(
-    private sceneConnector: XmlSceneConnector | null,
-    private actionConnector: XmlActionConnector | null,
-  ) {
-    super();
-  }
-
-  private toStringPayload(
-    payload: string | ArrayBuffer,
-    charset = "utf-8",
-  ): string {
-    if (typeof payload === "string") return payload;
-    return new TextDecoder(charset).decode(new Uint8Array(payload));
-  }
-
-  async load(
-    uuid: string,
-    current?: AudioSceneM,
-    options?: { signal?: AbortSignal },
-  ): Promise<AudioSceneM> | null {
-    if (this.sceneConnector == null) return null;
-    const payload = await this.sceneConnector.fetchScene(uuid, options);
-    return Promise.resolve(this.loadFromPayload(payload, current));
-  }
-
-  loadFromPayload(
-    payload: string | ArrayBuffer,
-    current?: AudioSceneM,
-  ): AudioSceneM {
-    const { uuid, version, ngaInteractivity } = XmlSceneParser.parseScene(
-      this.toStringPayload(payload),
-      current,
-    );
-    this.uuid = uuid;
-    this.version = version;
-    this.actionConnector?.setVersion(version);
-    return ngaInteractivity;
-  }
-
-  setOnAction(target: (actionString: string) => void | Promise<unknown>) {
-    if (this.actionConnector == null) {
-      this.actionConnector = new XmlActionConnector(this.version);
-    }
-    this.actionConnector.onAction = target;
-  }
-
-  applyAction(
-    action: Action,
-    current?: AudioSceneM,
-    options?: { signal?: AbortSignal },
-  ): Promise<AudioSceneM> | null {
-    if (this.actionConnector == null) {
-      this.actionConnector = new XmlActionConnector(this.version);
-    }
-    const returned_data = this.actionConnector.sendAction(
-      action,
-      this.uuid,
-      options,
-    );
-    // If we get a response with the newest XML content, load it again directly. Otherwise, try to load via the scene Connector.
-    if (
-      returned_data != null &&
-      (typeof returned_data === "string" ||
-        returned_data instanceof ArrayBuffer)
-    ) {
-      return Promise.resolve(this.loadFromPayload(returned_data, current));
-    } else {
-      return this.load(this.uuid, current);
-    }
   }
 }

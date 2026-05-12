@@ -1,7 +1,7 @@
 /*-----------------------------------------------------------------------------
 Software License for The Fraunhofer FDK MPEG-H Software
 
-Copyright (c) 2025 - 2025 Fraunhofer-Gesellschaft zur Förderung der angewandten
+Copyright (c) 2025 - 2026 Fraunhofer-Gesellschaft zur Förderung der angewandten
 Forschung e.V. and Contributors
 All rights reserved.
 
@@ -114,11 +114,14 @@ export class ExtendedView implements View {
 
     // preferred label languages, label options
     this.params.set("preferredLabelLanguages", []);
-    this.params.set("useLanguageEndonyms", true);
-    this.params.set("customLabels", customLabels);
+    this.params.set("useLanguageEndonyms", true); // displays language endonyms in the main selection view
+    this.params.set("customLabels", customLabels); // base labels for the extended theme
 
-    // filter submenu content by Kind
-    // second menu: selectable audio elements
+    // language persistency default settings
+    this.params.set("languagePersistency", true); // keeps audio language setting persistent when switching presets
+
+    // filter submenu content by Kind for second and third submenu
+    // second menu (main selection): selectable audio elements
     this.params.set("kindFiltersElementSelections", [
       // structure: name, [search for matches], [append to matches if matches were found]
       // first prio: language (displays languages)
@@ -141,7 +144,7 @@ export class ExtendedView implements View {
         ],
       ],
     ]);
-    // third menu: prominence controls
+    // third menu: main prominence controls
     this.params.set("kindFiltersProminence", [
       // first prio: voice accessibility
       [
@@ -195,7 +198,7 @@ export class ExtendedView implements View {
     // set new vm
     this.viewModel = audioScene;
     this.menuBar.setViewModel(audioScene);
-    this.subViews?.[0].setViewModel(audioScene);
+    this.subViews?.[0]?.setViewModel(audioScene);
     // update
     this.vmStructureUpdated();
     // listener
@@ -221,7 +224,9 @@ export class ExtendedView implements View {
     ) as NavigationController[]) {
       if (navCtrl instanceof ExtendedNavController) {
         if (this.viewModel.hasInteractivity()) {
-          navCtrl.initFocus();
+          if (navCtrl.currentFocus == null) {
+            navCtrl.initFocus();
+          }
         } else {
           navCtrl.loseFocus();
         }
@@ -230,13 +235,13 @@ export class ExtendedView implements View {
     this.ac2.abort();
     this.ac2 = new AbortController();
     // update viewmodel (only current preselection)
-    this.subViews?.[1].setViewModel(this.viewModel.selectedPreselection);
-    this.subViews?.[2].setViewModel(this.viewModel.selectedPreselection);
+    this.subViews?.[1]?.setViewModel(this.viewModel.selectedPreselection);
+    this.subViews?.[2]?.setViewModel(this.viewModel.selectedPreselection);
     this.menuBar.updateMainProminences(
       (this.subViews?.[2] as MainProminencesView)?.mode,
       (this.subViews?.[2] as MainProminencesView)?.viewModel,
     );
-    this.subViews?.[3].setViewModel(this.viewModel.selectedPreselection);
+    this.subViews?.[3].setViewModel(this.viewModel);
     this.updateMainSelection();
     for (const sel of this.viewModel.selectedPreselection
       .audioElementSelections) {
@@ -279,8 +284,9 @@ export class ExtendedView implements View {
             this.viewModel.selectedPreselection.getSwitchableElementsOfKinds(
               selFilter[i][2],
             );
-          if (![...additionalElems.values()].some((arr) => arr.length > 1))
+          if (![...additionalElems.values()].some((arr) => arr.length > 1)) {
             break additionalChecks;
+          }
           additionalElems.forEach((elems, selection) => {
             if (tmpSwitchableElems.has(selection)) {
               tmpSwitchableElems.get(selection).push(...elems);
@@ -290,16 +296,19 @@ export class ExtendedView implements View {
           });
         }
         switchableElems = tmpSwitchableElems;
-        if ([...tmpSwitchableElems.values()].some((arr) => arr.length > 1))
+        if ([...tmpSwitchableElems.values()].some((arr) => arr.length > 1)) {
           break;
+        }
       }
     }
     this.menuBar.updateMainSelection(mode, switchableElems);
-    if (this.subViews[1] instanceof MainSelectionView)
-      (this.subViews[1] as MainSelectionView).updateSelectionButtons(
+    if (this.subViews?.[1] instanceof MainSelectionView) {
+      this.subViews[1].updateSelectionButtons(
         mode,
         switchableElems,
+        this.viewModel,
       );
+    }
   }
 
   /**
@@ -313,6 +322,7 @@ export class ExtendedView implements View {
       this.container,
       this.params,
       this.menuBarSelect.bind(this),
+      this.menuBarBack.bind(this),
     );
     this.subViews.push(
       new PreselectionsView(
@@ -340,13 +350,23 @@ export class ExtendedView implements View {
         this.menuBar.containers[3],
         this.params,
         this.menuBar.buttons[3],
+        () => {
+          for (const btn of this.menuBar.buttons) {
+            if (btn.focusable) {
+              return btn;
+            }
+          }
+          return null;
+        },
       ),
     );
     this.rootElement.append(this.container);
   }
 
   menuBarSelect(b: ButtonView) {
-    if (!b.enabled) return undefined;
+    if (!b.enabled) {
+      return undefined;
+    }
     const index = this.menuBar.buttons.indexOf(b);
     let newTarget: UiComponentFocusable = undefined;
     for (let i = 0; i < this.subViews.length; i++) {
@@ -366,6 +386,26 @@ export class ExtendedView implements View {
       }
     }
     return newTarget;
+  }
+
+  menuBarBack(b: ButtonView) {
+    if (!this.subViews) {
+      return null;
+    }
+    let anyHidden = false;
+    for (let i = 0; i < this.subViews.length; i++) {
+      if (this.subViews[i].shown) {
+        anyHidden = true;
+      }
+      this.subViews[i]?.hide();
+      this.menuBar.buttons[i]?.setActive(false);
+      continue;
+    }
+    if (anyHidden) {
+      return b;
+    } else {
+      return null;
+    }
   }
 
   /**
@@ -409,7 +449,9 @@ export class ExtendedView implements View {
       string,
       Localizable[]
     >;
-    if (currentLabels == null) currentLabels = {};
+    if (currentLabels == null) {
+      currentLabels = {};
+    }
     for (const key of Object.keys(customLabelsParsed)) {
       // add new entries
       if (currentLabels[key] == null) {
@@ -439,6 +481,9 @@ export class ExtendedView implements View {
    * Hide the view and content.
    */
   hide() {
+    if (!this.subViews) {
+      return;
+    }
     for (let i = 0; i < this.subViews.length; i++) {
       this.subViews[i].hide();
     }
@@ -451,10 +496,14 @@ export class ExtendedView implements View {
    */
   dispose() {
     this.hide();
-    this.container.remove();
-    for (let i = 0; i < this.subViews.length; i++) {
-      this.subViews[i].dispose();
+    this.ac.abort();
+    this.ac2.abort();
+    if (this.subViews) {
+      for (let i = 0; i < this.subViews.length; i++) {
+        this.subViews[i].dispose();
+      }
     }
     this.menuBar.dispose();
+    this.container.remove();
   }
 }

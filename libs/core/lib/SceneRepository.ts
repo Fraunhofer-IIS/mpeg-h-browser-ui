@@ -1,7 +1,7 @@
 /*-----------------------------------------------------------------------------
 Software License for The Fraunhofer FDK MPEG-H Software
 
-Copyright (c) 2025 - 2025 Fraunhofer-Gesellschaft zur Förderung der angewandten
+Copyright (c) 2025 - 2026 Fraunhofer-Gesellschaft zur Förderung der angewandten
 Forschung e.V. and Contributors
 All rights reserved.
 
@@ -85,12 +85,20 @@ import { AudioSceneM } from "../src/NGAModels";
 export type UiActionCallback = (actionString: string) => void;
 
 export type Action =
-  | { type: "reset"; globalReset: boolean }
-  | { type: "selectPreferredDisplayLanguage"; languageCode: string }
-  | { type: "selectPreferredAudioLanguage"; languageCode: string }
+  | { type: "reset" }
+  | {
+      type: "selectPreferredDisplayLanguage";
+      languageCode: string;
+      priority: number;
+    }
+  | {
+      type: "selectPreferredAudioLanguage";
+      languageCode: string;
+      priority: number;
+    }
   | { type: "selectPreselection"; preselectionId: number }
   | { type: "selectAudioElementSelection"; groupId: number; elementId: number }
-  | { type: "setAudioElementSelectionMute"; groupId: number; enable: boolean } // currently not used, possible future extension
+  | { type: "setAudioElementSelectionMute"; groupId: number; enable: boolean }
   | {
       type: "setAudioElementSelectionProminence";
       groupId: number;
@@ -107,37 +115,12 @@ export type Action =
   | { type: "setAudioElementAzimuth"; elementId: number; value: number }
   | { type: "setAudioElementElevation"; elementId: number; value: number };
 
-export interface SceneConnector {
-  fetchScene(
-    uuid: string,
-    options?: { signal?: AbortSignal },
-  ): Promise<string | ArrayBuffer>;
-}
-
-export interface SceneParser {
-  parseScene(payload: string | ArrayBuffer, current?: AudioSceneM): AudioSceneM;
-}
-
-export interface ActionConnector {
-  sendAction(
-    action: Action,
-    uuid: string,
-    options?: { signal?: AbortSignal },
-  ): Promise<unknown> | null;
-}
 export interface SceneRepository extends EventTarget {
-  load(
-    uuid: string,
-    current?: AudioSceneM,
-    options?: { signal?: AbortSignal },
-  ): Promise<AudioSceneM> | null;
-  loadFromPayload(
-    payload: string | ArrayBuffer,
-    current?: AudioSceneM,
-  ): AudioSceneM;
+  load(options?: { signal?: AbortSignal }): Promise<AudioSceneM> | null;
+  loadFromPayload(payload: unknown): Promise<AudioSceneM>;
   applyAction(
     action: Action,
-    current?: AudioSceneM,
     options?: { signal?: AbortSignal },
   ): Promise<AudioSceneM> | null;
+  get supportedActions(): string[];
 }

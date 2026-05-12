@@ -1,10 +1,10 @@
 {
   "name": "@wmt/mpeg-h-browser-ui-renderer",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "MPEG-H Browser UI Renderer",
   "homepage": "https://github.com/Fraunhofer-IIS/mpeg-h-browser-ui",
   "bugs": "https://github.com/Fraunhofer-IIS/mpeg-h-browser-ui/issues",
-  "license": "SEE LICENSE IN license.txt",
+  "license": "SEE LICENSE IN LICENSE.txt",
   "author": {
     "name": "Fraunhofer IIS",
     "email": "amm-info@iis.fraunhofer.de"
@@ -29,10 +29,10 @@
     "build:lib": "tsc -b",
     "build:browser": "webpack",
     "format": "prettier --write \"./**/*.{ts,js,css}\"",
-    "lint": "eslint \"./**/*.{ts,js}\" --fix",
-    "test": "jest --runInBand --detectOpenHandles ",
-    "test:watch": "jest --watchAll --runInBand --detectOpenHandles ",
-    "test:coverage": "jest --coverage --runInBand --detectOpenHandles "
+    "lint": "eslint \"./**/*.{ts,js}\" --fix --ignore-pattern \"**/node_modules/**\" --ignore-pattern \"**/dist/**\"",
+    "test": "vitest",
+    "test:watch": "vitest --watch",
+    "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
     "@wmt/mpeg-h-browser-ui-core": "workspace:^"

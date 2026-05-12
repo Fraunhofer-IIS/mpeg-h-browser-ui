@@ -1,10 +1,10 @@
 {
   "name": "@wmt/mpeg-h-browser-ui",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "MPEG-H Browser UI",
   "homepage": "https://github.com/Fraunhofer-IIS/mpeg-h-browser-ui",
   "bugs": "https://github.com/Fraunhofer-IIS/mpeg-h-browser-ui/issues",
-  "license": "SEE LICENSE IN license.txt",
+  "license": "SEE LICENSE IN LICENSE.txt",
   "author": {
     "name": "Fraunhofer IIS",
     "email": "amm-info@iis.fraunhofer.de"
@@ -20,29 +20,32 @@
     "build:libs_to_apps": "pnpm build:libs && node ./copy_libs_to_apps.js",
     "format": "pnpm -r format",
     "lint": "pnpm -r lint",
+    "test": "pnpm -r test",
     "dev:watch": "tsc --build --watch"
   },
   "devDependencies": {
     "clean-webpack-plugin": "^4.0.0",
-    "css-loader": "^6.10.0",
-    "eslint": "^9.39.1",
+    "css-loader": "^6.11.0",
+    "eslint": "^9.39.2",
     "file-loader": "^6.2.0",
-    "prettier": "^3.7.3",
-    "rimraf": "^5.0.5",
+    "jsdom": "^27.4.0",
+    "prettier": "^3.8.1",
+    "rimraf": "^5.0.10",
     "style-loader": "^3.3.4",
     "svg-url-loader": "^8.0.0",
-    "terser-webpack-plugin": "^5.3.10",
-    "ts-loader": "^9.5.1",
+    "terser-webpack-plugin": "^5.3.16",
+    "ts-loader": "^9.5.4",
     "typescript": "^5.9.3",
     "url-loader": "^4.1.1",
-    "webpack": "^5.90.1",
+    "vitest": "^4.0.18",
+    "webpack": "^5.104.1",
     "webpack-cli": "^5.1.4",
-    "webpack-license-plugin": "^4.4.2",
+    "webpack-license-plugin": "^4.5.1",
     "webpack-merge": "^5.10.0"
   },
   "packageManager": "pnpm@8.15.3",
   "engines": {
-    "node": ">=20",
+    "node": ">=22",
     "pnpm": ">=8"
   },
   "private": true

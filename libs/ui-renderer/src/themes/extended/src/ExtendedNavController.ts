@@ -1,7 +1,7 @@
 /*-----------------------------------------------------------------------------
 Software License for The Fraunhofer FDK MPEG-H Software
 
-Copyright (c) 2025 - 2025 Fraunhofer-Gesellschaft zur Förderung der angewandten
+Copyright (c) 2025 - 2026 Fraunhofer-Gesellschaft zur Förderung der angewandten
 Forschung e.V. and Contributors
 All rights reserved.
 
@@ -92,7 +92,7 @@ export class ExtendedNavController implements NavigationController {
   // keep track of a graph with references to the elements
   // call focus and unfocus on the elements
   readonly supportedActions = ["left", "right", "up", "down", "select", "back"];
-  private _navConnections: Map<
+  private navConnections: Map<
     UiComponentFocusable,
     Record<string, NavigationTarget>
   > = new Map();
@@ -113,11 +113,20 @@ export class ExtendedNavController implements NavigationController {
   getConnection(from: UiComponentFocusable, action: string): NavigationTarget {
     if (
       !this.supportedActions.includes(action) ||
-      !this._navConnections.has(from)
+      !this.navConnections.has(from)
     ) {
       return undefined;
     }
-    return this._navConnections.get(from)[action];
+    return this.navConnections.get(from)[action];
+  }
+
+  /**
+   * Check whether the ui component exists as a source in the graph.
+   * @param from Ui component to check
+   * @returns true if the navigation graph contains the component.
+   */
+  hasSource(from: UiComponentFocusable): boolean {
+    return this.navConnections?.has(from);
   }
 
   /**
@@ -126,7 +135,7 @@ export class ExtendedNavController implements NavigationController {
    * @returns true if the source was removed
    */
   removeSource(source: UiComponentFocusable): boolean {
-    return this._navConnections?.delete(source);
+    return this.navConnections?.delete(source);
   }
 
   /**
@@ -145,21 +154,21 @@ export class ExtendedNavController implements NavigationController {
     if (!this.supportedActions.includes(action)) {
       return false;
     }
-    if (!this._navConnections.has(from)) {
+    if (!this.navConnections.has(from)) {
       const initSet: Record<string, NavigationTarget> = {};
       for (const ac of this.supportedActions) {
         initSet[ac] = undefined;
       }
-      this._navConnections.set(from, initSet);
+      this.navConnections.set(from, initSet);
     }
-    const outgoing = this._navConnections.get(from);
+    const outgoing = this.navConnections.get(from);
     if (outgoing[action] != null && !override) {
       return false;
     }
     outgoing[action] = to;
     // cleanup graph
     if (Object.values(outgoing).every((value) => value == null)) {
-      this._navConnections.delete(from);
+      this.navConnections.delete(from);
     }
     return true;
   }
@@ -172,15 +181,17 @@ export class ExtendedNavController implements NavigationController {
    */
   performAction(action: string, maxDepth: number = 10): boolean {
     // pre-checks
-    if (!this.supportedActions.includes(action)) return false;
+    if (!this.supportedActions.includes(action)) {
+      return false;
+    }
     if (
       this._currentFocus == null ||
-      !this._navConnections?.has(this._currentFocus)
+      !this.navConnections?.has(this._currentFocus)
     ) {
       this._currentFocus = null;
       // default focus to first enabled element in the graph
       for (let i = 0; i < 4; i++) {
-        const entry = this._navConnections?.entries().next();
+        const entry = this.navConnections?.entries().next();
         if (entry.value?.[0]?.focusable) {
           this._currentFocus = entry.value?.[0];
           entry.value?.[0]?.focus(0);
@@ -195,21 +206,25 @@ export class ExtendedNavController implements NavigationController {
     let target: UiComponentFocusable | (() => UiComponentFocusable) =
       this._currentFocus;
     for (let i = 0; i < maxDepth; i++) {
-      target = this._navConnections.get(target)?.[action];
+      target = this.navConnections.get(target)?.[action];
       // no target found -> return false
-      if (target == null) return false;
+      if (target == null) {
+        return false;
+      }
 
       if (typeof target === "function") {
         // execute function and set return as new query
         target = target();
-        if (!this._navConnections.has(target)) {
+        if (!this.navConnections.has(target)) {
           // new target not in graph -> return false (otherwise navigation would be stuck forever there!)
           return false;
         }
       }
 
       // end search if we found enabled query
-      if (target instanceof UiComponentFocusable && target.enabled) break;
+      if (target instanceof UiComponentFocusable && target.enabled) {
+        break;
+      }
       if (i === maxDepth - 1) {
         return false;
       }
@@ -225,12 +240,12 @@ export class ExtendedNavController implements NavigationController {
   initFocus() {
     if (
       this._currentFocus == null ||
-      !this._navConnections?.has(this._currentFocus)
+      !this.navConnections?.has(this._currentFocus)
     ) {
       // default focus to first element in the graph which is not disabled
 
       this._currentFocus?.blur(0);
-      for (const key of this._navConnections?.keys() || []) {
+      for (const key of this.navConnections?.keys() || []) {
         if (key?.focusable === true) {
           this._currentFocus = key;
           this._currentFocus?.focus(0);
@@ -250,7 +265,7 @@ export class ExtendedNavController implements NavigationController {
   }
 
   set currentFocus(newFocus: UiComponentFocusable) {
-    if (this._navConnections.has(newFocus)) {
+    if (this.navConnections.has(newFocus)) {
       this._currentFocus.blur(0);
       newFocus.focus(0);
       this._currentFocus = newFocus;

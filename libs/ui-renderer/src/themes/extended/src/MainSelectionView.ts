@@ -1,7 +1,7 @@
 /*-----------------------------------------------------------------------------
 Software License for The Fraunhofer FDK MPEG-H Software
 
-Copyright (c) 2025 - 2025 Fraunhofer-Gesellschaft zur Förderung der angewandten
+Copyright (c) 2025 - 2026 Fraunhofer-Gesellschaft zur Förderung der angewandten
 Forschung e.V. and Contributors
 All rights reserved.
 
@@ -83,6 +83,7 @@ amm-info@iis.fraunhofer.de
 import {
   AudioElementSelectionVM,
   AudioElementVM,
+  AudioSceneVM,
 } from "../../../../lib/AudioSceneVM";
 import { UiComponentFocusable } from "../lib/UiComponentFocusable";
 import { PopupView } from "./PopupView";
@@ -114,33 +115,53 @@ export class MainSelectionView extends PopupView {
   updateSelectionButtons(
     mode: string,
     switchableElems: Map<AudioElementSelectionVM, AudioElementVM[]>,
+    audioScene: AudioSceneVM,
   ) {
     // clear old listeners
-    this.dispose();
+    this.ac.abort();
     this.ac = new AbortController();
-    this.init();
 
     // update selection view
     const firstEntry = switchableElems?.entries()?.next();
     const firstSel = firstEntry?.value?.[0] as AudioElementSelectionVM;
     const firstSelElems = firstEntry?.value?.[1] as AudioElementVM[];
-    this.selectionView.updateData(firstSelElems);
+
+    const countPrev = this.selectionView.buttons.length;
+    const countNew = firstSelElems?.length ?? 0;
+
+    // unregister all btns that are not needed anymore in nav graph
+    for (let i = countNew; i < countPrev; i++) {
+      this.unregisterComponentFirstLayer(this.selectionView.buttons[i]);
+    }
+
+    // update selection view
+    this.selectionView.updateData(firstSelElems, mode);
+    // register all new buttons
+    for (let i = countPrev; i < countNew; i++) {
+      this.registerComponentFirstLayer(this.selectionView.buttons[i], false);
+    }
     this.selectionView.setActive(firstSel?.getSelectedAudioElement());
     this.selectionView.updateSelectAction((ae: AudioElementVM) => {
       firstSel?.selectAudioElement(ae);
+      if (
+        this.params.get("languagePersistency") === true &&
+        allOtherContentLanguagesDifferent()
+      ) {
+        audioScene?.setPreferredAudioLanguage(ae.getContentLanguage());
+      }
       this.hide();
     });
     if (firstSelElems?.length <= 1) {
       this.hide();
     }
-    // label config
-    this.selectionView.updateLabels(mode);
 
-    // add elems to nav controller graph
-    for (let i = 0; i < this.selectionView.buttons.length; i++) {
-      this.registerComponentFirstLayer(
-        this.selectionView.buttons[i],
-        this.selectionView.getActiveButton() === this.selectionView.buttons[i],
+    function allOtherContentLanguagesDifferent() {
+      return (
+        firstSelElems.filter(
+          (elem) =>
+            elem.getContentLanguage() ==
+            firstSel.getSelectedAudioElement().getContentLanguage(),
+        ).length === 1
       );
     }
   }
@@ -150,12 +171,12 @@ export class MainSelectionView extends PopupView {
   }
 
   dispose() {
-    super.dispose();
     // clear navigation graph
     if (this.selectionView?.buttons != null) {
       for (const btn of this.selectionView.buttons) {
         this.unregisterComponentFirstLayer(btn);
       }
     }
+    super.dispose();
   }
 }

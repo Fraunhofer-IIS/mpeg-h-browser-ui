@@ -1,7 +1,7 @@
 /*-----------------------------------------------------------------------------
 Software License for The Fraunhofer FDK MPEG-H Software
 
-Copyright (c) 2025 - 2025 Fraunhofer-Gesellschaft zur Förderung der angewandten
+Copyright (c) 2025 - 2026 Fraunhofer-Gesellschaft zur Förderung der angewandten
 Forschung e.V. and Contributors
 All rights reserved.
 
@@ -88,20 +88,20 @@ const targetDir = path.resolve("./apps");
 
 // List all app folders in targetDir
 const appFoldersInTarget = fs.readdirSync(targetDir).filter((appFolder) => {
-    const fullPath = path.join(targetDir, appFolder);
-    return fs.statSync(fullPath).isDirectory();
+  const fullPath = path.join(targetDir, appFolder);
+  return fs.statSync(fullPath).isDirectory();
 });
 
 // Copy js files to all app folders
 appFoldersInTarget.forEach((folder) => {
-    const targetLibDir = path.join(targetDir, folder, "lib");
-    // Create lib directory if not existent
-    if (!fs.existsSync(targetLibDir)) {
-        fs.mkdirSync(targetLibDir, { recursive: true });
-    }
-    // Copy all js files to targetLibDir
-    fs.readdirSync(sourceDir).forEach((src) => {
-        fs.copyFileSync(path.join(sourceDir, src), path.join(targetLibDir, src));
-        console.log(`Copied ${src} to ${targetLibDir}`);
-    });
+  const targetLibDir = path.join(targetDir, folder, "lib");
+  // Create lib directory if not existent
+  if (!fs.existsSync(targetLibDir)) {
+    fs.mkdirSync(targetLibDir, { recursive: true });
+  }
+  // Copy all js files to targetLibDir
+  fs.readdirSync(sourceDir).forEach((src) => {
+    fs.copyFileSync(path.join(sourceDir, src), path.join(targetLibDir, src));
+    console.log(`Copied ${src} to ${targetLibDir}`);
+  });
 });

@@ -1,7 +1,7 @@
 /*-----------------------------------------------------------------------------
 Software License for The Fraunhofer FDK MPEG-H Software
 
-Copyright (c) 2021 - 2025 Fraunhofer-Gesellschaft zur Förderung der angewandten
+Copyright (c) 2021 - 2026 Fraunhofer-Gesellschaft zur Förderung der angewandten
 Forschung e.V. and Contributors
 All rights reserved.
 
@@ -92,3 +92,5 @@ export * from "../src/BrowserLanguageConversion";
 export * from "./SceneRepository";
 export * from "../src/XmlModelParser";
 export * from "../src/XmlSceneRepository";
+export * from "../src/JsonModelParser";
+export * from "../src/RestSceneRepository";

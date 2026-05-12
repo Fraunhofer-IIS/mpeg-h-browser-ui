@@ -1,7 +1,7 @@
 /*-----------------------------------------------------------------------------
 Software License for The Fraunhofer FDK MPEG-H Software
 
-Copyright (c) 2025 - 2025 Fraunhofer-Gesellschaft zur Förderung der angewandten
+Copyright (c) 2025 - 2026 Fraunhofer-Gesellschaft zur Förderung der angewandten
 Forschung e.V. and Contributors
 All rights reserved.
 
@@ -160,11 +160,11 @@ amm-info@iis.fraunhofer.de
   background-color: var(--nga-ui-basic-accent-color);
 }
 
-#nga-ui-basic .object {
+#nga-ui-basic .audioelement {
   margin-top: 1em;
 }
 
-.slider {
+#nga-ui-basic .slider {
   -webkit-appearance: none;
   appearance: none;
   outline: none;
@@ -176,7 +176,7 @@ amm-info@iis.fraunhofer.de
   border-radius: 0.325em;
 }
 
-.slider::-webkit-slider-thumb {
+#nga-ui-basic .slider::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
   background-color: var(--nga-ui-basic-accent-color);
@@ -186,7 +186,7 @@ amm-info@iis.fraunhofer.de
   border-radius: 50%;
 }
 
-.slider::-moz-range-thumb {
+#nga-ui-basic .slider::-moz-range-thumb {
   background-color: var(--nga-ui-basic-accent-color);
   width: 1.5em;
   height: 1.5em;
@@ -194,17 +194,18 @@ amm-info@iis.fraunhofer.de
   border-radius: 50%;
 }
 
-.interactivityitem:has(:focus-visible),
-.interactivityitem:has(.basic-focused) {
+#nga-ui-basic .interactivityitem:has(:focus-visible),
+#nga-ui-basic .interactivityitem:has(.basic-focused) {
   outline: 3px solid white !important;
   border-color: white !important;
 }
 
-.audioobjects:has(.object) {
-  margin-top: 1em;
-  border-top: 2px solid white;
+#nga-ui-basic .presets:has(~ .audioelements .audioelement),
+#nga-ui-basic .presets:has(~ .audioswitches .audioelement) {
+  padding-bottom: 1em;
+  border-bottom: 2px solid white;
 }
 
-*:focus-visible {
+#nga-ui-basic *:focus-visible {
   outline: none;
 }

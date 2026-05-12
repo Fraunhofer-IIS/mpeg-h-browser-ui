@@ -1,7 +1,7 @@
 /*-----------------------------------------------------------------------------
 Software License for The Fraunhofer FDK MPEG-H Software
 
-Copyright (c) 2025 - 2025 Fraunhofer-Gesellschaft zur Förderung der angewandten
+Copyright (c) 2025 - 2026 Fraunhofer-Gesellschaft zur Förderung der angewandten
 Forschung e.V. and Contributors
 All rights reserved.
 
@@ -85,6 +85,9 @@ amm-info@iis.fraunhofer.de
  */
 
 export function clamp(input: number, min: number, max: number): number {
+  if (min > max) {
+    throw new Error("min must be <= max");
+  }
   if (min != null) {
     input = Math.max(input, min);
   }
@@ -95,8 +98,12 @@ export function clamp(input: number, min: number, max: number): number {
 }
 
 export function quantize(input: number, step: number): number {
-  if (!Number.isFinite(input)) return input;
-  if (!Number.isFinite(step) || step <= 0) throw new Error("step must be > 0");
+  if (!Number.isFinite(input)) {
+    return input;
+  }
+  if (!Number.isFinite(step) || step <= 0) {
+    throw new Error("step must be finite and > 0");
+  }
 
   const quantized = Math.round(input / step) * step;
 

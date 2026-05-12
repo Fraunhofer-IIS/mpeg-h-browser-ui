@@ -1,7 +1,7 @@
 /*-----------------------------------------------------------------------------
 Software License for The Fraunhofer FDK MPEG-H Software
 
-Copyright (c) 2025 - 2025 Fraunhofer-Gesellschaft zur Förderung der angewandten
+Copyright (c) 2025 - 2026 Fraunhofer-Gesellschaft zur Förderung der angewandten
 Forschung e.V. and Contributors
 All rights reserved.
 
@@ -112,8 +112,9 @@ export function getPreferredLocalizable(
   localizables: Localizable[],
   preferredLabelLanguages: string[],
 ): Localizable {
-  if (localizables == null || localizables.length === 0)
+  if (localizables == null || localizables.length === 0) {
     return new Localizable("", "");
+  }
   for (const prefLang of preferredLabelLanguages) {
     for (const local of localizables) {
       if (local.lang === prefLang) {

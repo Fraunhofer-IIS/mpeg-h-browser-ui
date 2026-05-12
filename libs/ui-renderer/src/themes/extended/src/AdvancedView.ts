@@ -1,7 +1,7 @@
 /*-----------------------------------------------------------------------------
 Software License for The Fraunhofer FDK MPEG-H Software
 
-Copyright (c) 2025 - 2025 Fraunhofer-Gesellschaft zur Förderung der angewandten
+Copyright (c) 2025 - 2026 Fraunhofer-Gesellschaft zur Förderung der angewandten
 Forschung e.V. and Contributors
 All rights reserved.
 
@@ -83,7 +83,7 @@ amm-info@iis.fraunhofer.de
 import {
   AudioElementSelectionVM,
   AudioElementVM,
-  PreselectionVM,
+  AudioSceneVM,
 } from "../../../../lib/AudioSceneVM";
 import { UiComponentFocusable } from "../lib/UiComponentFocusable";
 import { PopupView } from "./PopupView";
@@ -94,14 +94,20 @@ import { AdvancedNavBarView } from "./AdvancedNavBarView";
 import { Localizable } from "@wmt/mpeg-h-browser-ui-core";
 
 export class AdvancedView extends PopupView {
-  viewModel: PreselectionVM;
+  viewModel: AudioSceneVM;
   element: HTMLUListElement;
   ac = new AbortController();
   currentAeOrAes: AudioElementVM | AudioElementSelectionVM;
+
   interactivityContainer: HTMLDivElement;
-  interactivityControls: UiComponentFocusable[] = [];
+  selectionButton: ButtonView;
+  prominenceSlider: SliderView;
+  azimuthSlider: SliderView;
+  elevationSlider: SliderView;
+
   navBar: AdvancedNavBarView;
   resetButton: ButtonView;
+
   advancedSelectionView: AdvancedSelectionView;
   currentIndex = 0;
 
@@ -109,6 +115,9 @@ export class AdvancedView extends PopupView {
     rootElement: HTMLElement,
     params: Map<string, unknown>,
     parentFocusElement: UiComponentFocusable,
+    private getResetFocusTarget: () => UiComponentFocusable = () => {
+      return null;
+    },
   ) {
     super(rootElement, params, parentFocusElement);
     this.init();
@@ -131,8 +140,12 @@ export class AdvancedView extends PopupView {
       this.element,
       this.params,
       () => {
-        this.viewModel.reset(false);
-        return this.parentFocusElement;
+        this.viewModel.reset();
+        if (this.getResetFocusTarget() != null) {
+          this.hide();
+          return this.getResetFocusTarget();
+        }
+        return this.resetButton;
       },
       (this.params.get("customLabels") as Record<string, Localizable[]>)[
         "reset"
@@ -145,13 +158,15 @@ export class AdvancedView extends PopupView {
     this.registerComponentFirstLayer(this.resetButton);
   }
 
-  setViewModel(vm: PreselectionVM) {
-    this.dispose(true);
+  setViewModel(vm: AudioSceneVM) {
+    this.ac.abort();
     this.ac = new AbortController();
-    this.init();
 
     this.viewModel = vm;
-    const aes = this.viewModel.getInteractiveAesOfKinds(null, null);
+    const aes = this.viewModel.selectedPreselection.getInteractiveAesOfKinds(
+      null,
+      null,
+    );
     if (this.currentIndex >= aes.length) {
       this.currentIndex = 0;
     }
@@ -160,8 +175,9 @@ export class AdvancedView extends PopupView {
       this.hide();
     }
     this.navBar.setViewModel(this.currentAeOrAes);
-    this.navBar.setEnabled(aes.length > 1);
     this.fillPage();
+    this.navBar.setEnabled(aes.length > 1);
+    this.resetButton.labelView.update();
     this.updateMaxHeight(aes);
   }
 
@@ -193,50 +209,76 @@ export class AdvancedView extends PopupView {
       ) {
         max_count_buttons_sliders = current;
       }
-      this.element.style.setProperty(
-        "--nga-ui-extended-advanced-max-btns",
-        max_count_buttons_sliders[0].toString(),
-      );
-      this.element.style.setProperty(
-        "--nga-ui-extended-advanced-max-sliders",
-        max_count_buttons_sliders[1].toString(),
-      );
     }
+    this.element.style.setProperty(
+      "--nga-ui-extended-advanced-max-btns",
+      max_count_buttons_sliders[0].toString(),
+    );
+    this.element.style.setProperty(
+      "--nga-ui-extended-advanced-max-sliders",
+      max_count_buttons_sliders[1].toString(),
+    );
   }
 
   emptyPage() {
-    for (const i of this.interactivityControls) {
-      this.unregisterComponentFirstLayer(i);
-      i.element.remove();
+    for (let elem of [
+      this.selectionButton,
+      this.prominenceSlider,
+      this.azimuthSlider,
+      this.elevationSlider,
+    ]) {
+      if (elem == null) {
+        continue;
+      }
+      this.unregisterComponentFirstLayer(elem);
+      elem.dispose();
+      elem = null;
     }
-    this.interactivityControls = [];
     if (this.advancedSelectionView != null) {
       this.advancedSelectionView.dispose();
+      this.advancedSelectionView = null;
     }
   }
 
   fillPage() {
-    if (this.currentAeOrAes == undefined) return;
+    // pre-checks & navbar updates
+    if (this.currentAeOrAes == undefined) {
+      return;
+    }
     this.navBar.setViewModel(this.currentAeOrAes);
+    let tmpPrevView: UiComponentFocusable = this.navBar;
+    // selection button & submenu
     if (
       this.currentAeOrAes instanceof AudioElementSelectionVM &&
       this.currentAeOrAes.audioElements.length > 0
     ) {
-      const selectionBtn = new ButtonView(
-        this.interactivityContainer,
-        this.params,
-        this.toggleElementSwitch.bind(this),
-        this.currentAeOrAes.getSelectedAudioElement().labels,
-        undefined,
-        "dropdown",
-      );
-      selectionBtn.setEnabled(true);
+      if (this.selectionButton == null) {
+        this.selectionButton = new ButtonView(
+          this.interactivityContainer,
+          this.params,
+          this.toggleElementSwitch.bind(this),
+          this.currentAeOrAes.getSelectedAudioElement().labels,
+          undefined,
+          "dropdown",
+        );
+        this.registerComponentFirstLayer(
+          this.selectionButton,
+          false,
+          tmpPrevView,
+        );
+      } else {
+        this.selectionButton.updateLabel(
+          this.currentAeOrAes?.getSelectedAudioElement().labels,
+        );
+        this.selectionButton.toEnd();
+      }
+      this.selectionButton.setEnabled(true);
       this.currentAeOrAes.addEventListener(
         "change",
         (e: Event) => {
           const detail = (e as CustomEvent).detail;
           if (detail.type === "audioElementSelectionChanged") {
-            selectionBtn.updateLabel(
+            this.selectionButton.updateLabel(
               (
                 this.currentAeOrAes as AudioElementSelectionVM
               )?.getSelectedAudioElement()?.labels,
@@ -245,56 +287,101 @@ export class AdvancedView extends PopupView {
         },
         { signal: this.ac.signal },
       );
-      if (this.currentAeOrAes.audioElements.length == 1) {
-        selectionBtn.setEnabled(false);
+      if (this.currentAeOrAes.audioElements.length <= 1) {
+        this.selectionButton.setEnabled(false);
       }
-      this.interactivityControls.push(selectionBtn);
-      this.advancedSelectionView = new AdvancedSelectionView(
-        this.interactivityContainer,
-        this.params,
-        selectionBtn,
-      );
+      if (this.advancedSelectionView == null) {
+        this.advancedSelectionView = new AdvancedSelectionView(
+          this.interactivityContainer,
+          this.params,
+          this.selectionButton,
+        );
+      }
       this.advancedSelectionView.setViewModel(this.currentAeOrAes);
-    }
-    if (this.currentAeOrAes.hasProminenceControl()) {
-      const promSlider = new SliderView(
-        this.interactivityContainer,
-        this.params,
-        "prominence",
-      );
-      promSlider.setViewModel(this.currentAeOrAes);
-      this.interactivityControls.push(promSlider);
-    }
-    if (this.currentAeOrAes.hasAzimuthControl()) {
-      const azimSlider = new SliderView(
-        this.interactivityContainer,
-        this.params,
-        "azimuth",
-      );
-      azimSlider.setViewModel(this.currentAeOrAes);
-      this.interactivityControls.push(azimSlider);
-    }
-    if (this.currentAeOrAes.hasElevationControl()) {
-      const elevSlider = new SliderView(
-        this.interactivityContainer,
-        this.params,
-        "elevation",
-      );
-      elevSlider.setViewModel(this.currentAeOrAes);
-      this.interactivityControls.push(elevSlider);
-    }
-    this.unregisterComponentFirstLayer(this.resetButton);
-    let firstRegistered = false;
-    for (let i = 0; i < this.interactivityControls.length; i++) {
-      if (this.interactivityControls[i].enabled && !firstRegistered) {
-        this.registerComponentFirstLayer(this.interactivityControls[i], true);
-        firstRegistered = true;
-      } else {
-        this.registerComponentFirstLayer(this.interactivityControls[i], false);
+      tmpPrevView = this.selectionButton;
+    } else {
+      if (this.selectionButton != null) {
+        this.unregisterComponentFirstLayer(this.selectionButton);
+        this.selectionButton.dispose();
+        this.selectionButton = null;
+      }
+      if (this.advancedSelectionView != null) {
+        this.advancedSelectionView.dispose();
+        this.advancedSelectionView = null;
       }
     }
-    this.registerComponentFirstLayer(this.resetButton);
-    this.resetButton.labelView.update();
+
+    // prominence
+    if (this.currentAeOrAes.hasProminenceControl()) {
+      if (this.prominenceSlider == null) {
+        this.prominenceSlider = new SliderView(
+          this.interactivityContainer,
+          this.params,
+          "prominence",
+        );
+        this.registerComponentFirstLayer(
+          this.prominenceSlider,
+          false,
+          tmpPrevView,
+        );
+      } else {
+        this.prominenceSlider.toEnd();
+      }
+      this.prominenceSlider.setViewModel(this.currentAeOrAes);
+      tmpPrevView = this.prominenceSlider;
+    } else if (this.prominenceSlider != null) {
+      this.unregisterComponentFirstLayer(this.prominenceSlider);
+      this.prominenceSlider.dispose();
+      this.prominenceSlider = null;
+    }
+
+    // azimuth
+    if (this.currentAeOrAes.hasAzimuthControl()) {
+      if (this.azimuthSlider == null) {
+        this.azimuthSlider = new SliderView(
+          this.interactivityContainer,
+          this.params,
+          "azimuth",
+        );
+        this.registerComponentFirstLayer(
+          this.azimuthSlider,
+          false,
+          tmpPrevView,
+        );
+      } else {
+        this.azimuthSlider.toEnd();
+      }
+      this.azimuthSlider.setViewModel(this.currentAeOrAes);
+      tmpPrevView = this.azimuthSlider;
+    } else if (this.azimuthSlider != null) {
+      this.unregisterComponentFirstLayer(this.azimuthSlider);
+      this.azimuthSlider.dispose();
+      this.azimuthSlider = null;
+    }
+
+    // elevation
+    if (this.currentAeOrAes.hasElevationControl()) {
+      if (this.elevationSlider == null) {
+        this.elevationSlider = new SliderView(
+          this.interactivityContainer,
+          this.params,
+          "elevation",
+        );
+        this.registerComponentFirstLayer(
+          this.elevationSlider,
+          false,
+          tmpPrevView,
+        );
+      } else {
+        this.elevationSlider.toEnd();
+      }
+      this.elevationSlider.setViewModel(this.currentAeOrAes);
+      tmpPrevView = this.elevationSlider;
+    } else if (this.elevationSlider != null) {
+      this.unregisterComponentFirstLayer(this.elevationSlider);
+      this.elevationSlider.dispose();
+      this.elevationSlider = null;
+    }
   }
 
   toggleElementSwitch(btn: ButtonView | null = null): UiComponentFocusable {
@@ -310,7 +397,8 @@ export class AdvancedView extends PopupView {
   }
 
   switchPage(direction: "left" | "right") {
-    const allInteractive = this.viewModel.getInteractiveAesOfKinds(null, null);
+    const allInteractive =
+      this.viewModel.selectedPreselection.getInteractiveAesOfKinds(null, null);
     if (direction === "left") {
       this.currentIndex -= 1;
       if (this.currentIndex < 0) {
@@ -326,33 +414,34 @@ export class AdvancedView extends PopupView {
       this.toggleElementSwitch();
     }
     this.currentAeOrAes = allInteractive?.[this.currentIndex];
-    this.emptyPage();
     this.fillPage();
   }
 
   getMainFocusTarget(): UiComponentFocusable {
-    for (const focusableElement of this.interactivityControls) {
-      if (focusableElement.focusable) {
+    for (const focusableElement of [
+      this.selectionButton,
+      this.prominenceSlider,
+      this.azimuthSlider,
+      this.elevationSlider,
+    ]) {
+      if (focusableElement?.focusable) {
         return focusableElement;
       }
     }
-    return null;
+    return this.resetButton;
   }
 
   dispose(full: boolean = false) {
     this.emptyPage();
-    super.dispose();
-    if (full) {
-      this.navBar.dispose();
-      this.element.remove();
-    }
-    // clear navigation graph
-    for (const i of this.interactivityControls) {
-      this.unregisterComponentFirstLayer(i);
-    }
+    // clear generic ui items from navigation graph
     if (full) {
       this.unregisterComponentFirstLayer(this.navBar);
       this.unregisterComponentFirstLayer(this.resetButton);
+    }
+    if (full) {
+      this.navBar.dispose();
+      this.resetButton.dispose();
+      super.dispose();
     }
   }
 

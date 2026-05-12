@@ -1,7 +1,7 @@
 /*-----------------------------------------------------------------------------
 Software License for The Fraunhofer FDK MPEG-H Software
 
-Copyright (c) 2021 - 2025 Fraunhofer-Gesellschaft zur Förderung der angewandten
+Copyright (c) 2021 - 2026 Fraunhofer-Gesellschaft zur Förderung der angewandten
 Forschung e.V. and Contributors
 All rights reserved.
 
@@ -94,8 +94,23 @@ export class Localizable {
   constructor(
     readonly value: string,
     readonly lang: string,
-    readonly dir: string = "auto",
-  ) {}
+    readonly dir: "ltr" | "rtl" | "auto" = "auto",
+  ) {
+    if (typeof lang !== "string" || lang.length < 2) {
+      throw new TypeError("lang must be a string with at least 2 characters");
+    }
+    if (dir !== "ltr" && dir !== "rtl" && dir !== "auto") {
+      throw new TypeError('dir must be "ltr", "rtl", or "auto"');
+    }
+  }
+
+  equals(toCheckLocalizable: Localizable) {
+    return (
+      this.value === toCheckLocalizable.value &&
+      this.lang === toCheckLocalizable.lang &&
+      this.dir === toCheckLocalizable.dir
+    );
+  }
 }
 
 /**
@@ -124,13 +139,15 @@ export type LanguageNameConverter = (
 /**
  * Convert a iso 639-2 or 639-1 language tag to a language tag according to BCP47 (= shortest valid tag)
  * @param inLangTag input language tag, at least 2 letters.
- * @returns a language tag according to BCP47
+ * @returns a language tag according to BCP47, or undefined if no matching language tag could be found
  */
 
 export const toBCP47 = (inLangTag: string) => {
-  if (inLangTag == null) return undefined;
+  if (inLangTag == null) {
+    return undefined;
+  }
   // grab the first alphabetical substring for further processing
-  inLangTag = inLangTag.match(/[a-zA-Z]+/)?.[0] ?? "";
+  inLangTag = inLangTag.match(/[a-zA-Z]+/)?.[0].toLowerCase() ?? "";
   if (inLangTag.length < 2) {
     return undefined;
   } else if (inLangTag.length == 2) {
@@ -173,29 +190,31 @@ export const toBCP47Array = (inLangs: string[]) => {
 
 export const to639_2B = (inLangTag: string) => {
   // convert a 639-2 or 639-1 language tag language tag to a 639-2/B tag.
-  if (inLangTag.length <= 2) {
+  if (inLangTag.length < 2) {
     return undefined;
-  } else if (inLangTag.length == 2) {
+  }
+  inLangTag = inLangTag.toLowerCase();
+  if (inLangTag.length == 2) {
     return iso639_1_to_639_2_B.get(inLangTag);
-  } else if (inLangTag.length == 3) {
+  }
+  if (inLangTag.length == 3) {
     const converted = iso639_2_to_639_1.get(inLangTag);
     if (converted == null) {
       // cant find corresponding -1 tag: => no difference bnetween /T and /B tag.
       return inLangTag;
     }
     return iso639_1_to_639_2_B.get(converted);
-  } else {
-    // try to find a match for longer input tags
-    const converted = iso639_2_to_639_1.get(inLangTag.substring(0, 3));
-    if (converted != null) {
-      return converted;
-    }
-    const is2letterValid = iso639_1_to_639_2_B.has(inLangTag.substring(0, 2));
-    if (is2letterValid) {
-      return iso639_1_to_639_2_B.get(inLangTag.substring(0, 2));
-    }
+  }
+  // try to find a match for longer input tags
+  const is3LetterValid = iso639_2_to_639_1.has(inLangTag.substring(0, 3));
+  if (is3LetterValid) {
     return inLangTag.substring(0, 3);
   }
+  const is2letterValid = iso639_1_to_639_2_B.has(inLangTag.substring(0, 2));
+  if (is2letterValid) {
+    return iso639_1_to_639_2_B.get(inLangTag.substring(0, 2));
+  }
+  return undefined;
 };
 
 /**

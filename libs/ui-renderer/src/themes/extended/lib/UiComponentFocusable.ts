@@ -1,7 +1,7 @@
 /*-----------------------------------------------------------------------------
 Software License for The Fraunhofer FDK MPEG-H Software
 
-Copyright (c) 2025 - 2025 Fraunhofer-Gesellschaft zur Förderung der angewandten
+Copyright (c) 2025 - 2026 Fraunhofer-Gesellschaft zur Förderung der angewandten
 Forschung e.V. and Contributors
 All rights reserved.
 
@@ -107,7 +107,9 @@ export abstract class UiComponentFocusable extends UiComponent {
       this.focusedBy.add(i);
       this.element.classList.add("focused_navctrl_" + i);
       // make focusable by tab
-      if (i === 0) this.element.tabIndex = 0;
+      if (i === 0) {
+        this.element.tabIndex = 0;
+      }
     }
   }
 
@@ -122,6 +124,8 @@ export abstract class UiComponentFocusable extends UiComponent {
     }
     this.element.classList.remove("focused_navctrl_" + i);
     // make not focusable by tab
-    if (i === 0) this.element.tabIndex = -1;
+    if (i === 0) {
+      this.element.tabIndex = -1;
+    }
   }
 }

@@ -1,7 +1,7 @@
 /*-----------------------------------------------------------------------------
 Software License for The Fraunhofer FDK MPEG-H Software
 
-Copyright (c) 2025 - 2025 Fraunhofer-Gesellschaft zur Förderung der angewandten
+Copyright (c) 2025 - 2026 Fraunhofer-Gesellschaft zur Förderung der angewandten
 Forschung e.V. and Contributors
 All rights reserved.
 
@@ -101,20 +101,32 @@ import {
 
 export class XmlSceneParser {
   static parseNumericParams(xmlNode: Element) {
-    if (xmlNode) {
-      const isActionAllowed =
-        xmlNode.getAttribute("isActionAllowed") === "true" ||
-        !xmlNode.getAttribute("isActionAllowed");
-      if (isActionAllowed) {
-        return {
-          value: Number.parseFloat(xmlNode.getAttribute("val")),
-          defaultValue: Number.parseFloat(xmlNode.getAttribute("def")),
-          minValue: Number.parseFloat(xmlNode.getAttribute("min")),
-          maxValue: Number.parseFloat(xmlNode.getAttribute("max")),
-        };
-      }
+    if (!xmlNode) {
+      return null;
     }
-    return null;
+
+    const isActionAllowed =
+      xmlNode.getAttribute("isActionAllowed") === "true" ||
+      !xmlNode.getAttribute("isActionAllowed");
+    if (!isActionAllowed) {
+      return null;
+    }
+
+    const getNumericXmlValue = (name: string) => {
+      const xmlValue = xmlNode.getAttribute(name);
+      return xmlValue == null ? null : Number.parseFloat(xmlValue);
+    };
+
+    const value = getNumericXmlValue("val");
+    const defaultValue = getNumericXmlValue("def");
+    const minValue = getNumericXmlValue("min");
+    const maxValue = getNumericXmlValue("max");
+
+    if (minValue == null || maxValue == null || defaultValue == null) {
+      return null;
+    }
+
+    return { value, defaultValue, minValue, maxValue };
   }
 
   static toSchemeUri(xmlTable: string): string | null {
@@ -149,7 +161,7 @@ export class XmlSceneParser {
     const audioLanguage = toBCP47(customKindNode.getAttribute("langCode"));
     const descriptionNodes = customKindNode.getElementsByTagName("description");
     for (let i = 0; i < descriptionNodes.length; i++) {
-      const value = descriptionNodes.item(i).innerHTML;
+      const value = descriptionNodes.item(i).textContent ?? "";
       const lang = toBCP47(descriptionNodes[i].getAttribute("langCode"));
       // preferred language: beginning
       if (descriptionNodes[i].getAttribute("isPreferred") === "true") {
@@ -184,9 +196,14 @@ export class XmlSceneParser {
         elevationOffsetParams?.maxValue,
         elevationOffsetParams?.defaultValue,
         { domainMin: -90, domainMax: 90, step: 3, unit: "°" },
+        null,
+        null,
+        null,
+        null,
+        null,
+        azimuthOffsetParams?.value,
+        elevationOffsetParams?.value,
       );
-      positionInteractivity.setAzimuth(azimuthOffsetParams?.value);
-      positionInteractivity.setElevation(elevationOffsetParams?.value);
     }
 
     const prominenceParams = this.parseNumericParams(
@@ -199,8 +216,9 @@ export class XmlSceneParser {
         prominenceParams?.maxValue,
         prominenceParams?.defaultValue,
         { domainMin: -63, domainMax: 31, step: 1, unit: "dB" },
+        null,
+        prominenceParams.value,
       );
-      prominenceInteractivity.setProminence(prominenceParams?.value);
     }
     return { positionInteractivity, prominenceInteractivity };
   }
@@ -346,9 +364,6 @@ export class XmlSceneParser {
     const presets: PreselectionM[] = [];
     let activePreset: PreselectionM;
 
-    const audioObjects = this.parseAudioObjectList(xmlRoot, "AudioSceneConfig");
-    const audioSwitchGroups = this.parseAudioSwitchGroupList(xmlRoot);
-
     const presetNodes = xmlRoot.getElementsByTagName("preset");
     for (let i = 0; i < presetNodes.length; ++i) {
       const { id, labels, kinds } = this.parseAudioElementMetadata(
@@ -357,8 +372,8 @@ export class XmlSceneParser {
 
       const preset = new PreselectionM(
         kinds,
-        audioObjects,
-        audioSwitchGroups,
+        this.parseAudioObjectList(xmlRoot, "AudioSceneConfig"),
+        this.parseAudioSwitchGroupList(xmlRoot),
         undefined,
         undefined,
         undefined,
@@ -377,10 +392,9 @@ export class XmlSceneParser {
   /**
    * Parse an audio scene from a XML string.
    * @param audioSceneXmlString the new audio scene in xml format
-   * @param currentScene current audio scene. Currently not used, could be used for only partial update.
-   * @returns updated or mewly created audio scene
+   * @returns parsed audio scene
    */
-  static parseScene(audioSceneXmlString: string, currentScene?: AudioSceneM) {
+  static parseScene(audioSceneXmlString: string) {
     const parser = new DOMParser();
     const xmlDoc = parser.parseFromString(audioSceneXmlString, "text/xml");
     const parserError = xmlDoc.querySelector("parsererror div");
@@ -390,10 +404,6 @@ export class XmlSceneParser {
     const xmlRoot = xmlDoc.documentElement;
     const uuid = xmlRoot.getAttribute("uuid");
     const version = xmlRoot.getAttribute("version");
-
-    if (uuid != currentScene?.uuid) {
-      currentScene = undefined;
-    }
 
     switch (version) {
       case "11.0":
@@ -410,7 +420,7 @@ export class XmlSceneParser {
           ngaInteractivity: this.parseAudioPresetList_v9(xmlRoot),
         };
       default:
-        throw "Unsupported MPEG-H UI manager XML version";
+        throw new Error("Unsupported MPEG-H UI manager XML version");
     }
   }
 }

@@ -15,12 +15,10 @@
     "noImplicitAny": true,
     "strict": false,
     "verbatimModuleSyntax": false,
-    "forceConsistentCasingInFileNames": true
+    "forceConsistentCasingInFileNames": true,
+    "types": ["vitest/globals"]
   },
   "files": [],
-  "exclude": ["node_modules", "**/*/dist", "**/*/test"],
-  "references": [
-    { "path": "libs/core" },
-    { "path": "libs/ui-renderer" }
-  ]
+  "exclude": ["node_modules", "dist", "**/*.test.ts", "**/*.spec.ts"],
+  "references": [{ "path": "libs/core" }, { "path": "libs/ui-renderer" }]
 }

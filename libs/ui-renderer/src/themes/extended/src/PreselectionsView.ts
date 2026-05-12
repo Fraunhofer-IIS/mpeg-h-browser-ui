@@ -1,7 +1,7 @@
 /*-----------------------------------------------------------------------------
 Software License for The Fraunhofer FDK MPEG-H Software
 
-Copyright (c) 2025 - 2025 Fraunhofer-Gesellschaft zur Förderung der angewandten
+Copyright (c) 2025 - 2026 Fraunhofer-Gesellschaft zur Förderung der angewandten
 Forschung e.V. and Contributors
 All rights reserved.
 
@@ -111,13 +111,24 @@ export class PreselectionsView extends PopupView {
 
   setViewModel(vm: AudioSceneVM) {
     // clear old vm listeners
-    this.dispose();
+    this.ac.abort();
     this.ac = new AbortController();
-    this.init();
 
+    const countPrev = this.selectionView?.buttons?.length ?? 0;
     this.viewModel = vm;
+    const countNew = this.viewModel?.preselections?.length ?? 0;
+
+    // unregister all btns that are not needed anymore in nav graph
+    for (let i = countNew; i < countPrev; i++) {
+      this.unregisterComponentFirstLayer(this.selectionView.buttons[i]);
+    }
+
     // update selection view
     this.selectionView.updateData(this.viewModel.preselections);
+    // register all new buttons
+    for (let i = countPrev; i < countNew; i++) {
+      this.registerComponentFirstLayer(this.selectionView.buttons[i], false);
+    }
     this.selectionView.setActive(this.viewModel.selectedPreselection);
     this.selectionView.updateSelectAction(this.selectAction.bind(this));
     // add listeners for changed preselection or model
@@ -126,14 +137,19 @@ export class PreselectionsView extends PopupView {
       (e: Event) => {
         const detail = (e as CustomEvent).detail;
         if (detail.type === "modelUpdated") {
-          for (let i = 0; i < this.viewModel.preselections.length; i++) {
+          const countPrev = this.selectionView?.buttons?.length ?? 0;
+          const countNew = this.selectionView.buttons.length;
+          // unregister all btns that are not needed anymore in nav graph
+          for (let i = countNew; i < countPrev; i++) {
             this.unregisterComponentFirstLayer(this.selectionView.buttons[i]);
           }
+          // update selection view
           this.selectionView.updateData(this.viewModel.preselections);
-          for (let i = 0; i < this.viewModel.preselections.length; i++) {
+          // register all new buttons
+          for (let i = countPrev; i < countNew; i++) {
             this.registerComponentFirstLayer(
               this.selectionView.buttons[i],
-              this.viewModel.selectedPreselectionIndex === i,
+              false,
             );
           }
         }
@@ -142,23 +158,10 @@ export class PreselectionsView extends PopupView {
           detail.type === "preselectionChanged"
         ) {
           this.selectionView.setActive(this.viewModel.selectedPreselection);
-          this.registerComponentFirstLayer(
-            this.selectionView.buttons[
-              this.viewModel.selectedPreselectionIndex
-            ],
-            true,
-          );
         }
       },
       { signal: this.ac.signal },
     );
-    // add elems to nav controller graph
-    for (let i = 0; i < this.viewModel.preselections.length; i++) {
-      this.registerComponentFirstLayer(
-        this.selectionView.buttons[i],
-        this.viewModel.selectedPreselectionIndex === i,
-      );
-    }
   }
 
   selectAction(toSelect: PreselectionVM) {

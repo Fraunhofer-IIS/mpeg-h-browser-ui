@@ -1,7 +1,7 @@
 /*-----------------------------------------------------------------------------
 Software License for The Fraunhofer FDK MPEG-H Software
 
-Copyright (c) 2022 - 2025 Fraunhofer-Gesellschaft zur Förderung der angewandten
+Copyright (c) 2022 - 2026 Fraunhofer-Gesellschaft zur Förderung der angewandten
 Forschung e.V. and Contributors
 All rights reserved.
 
@@ -80,22 +80,24 @@ www.iis.fraunhofer.de/amm
 amm-info@iis.fraunhofer.de
 -----------------------------------------------------------------------------*/
 
-const mpeghUiRoot = document.querySelector('#mpegh-ui');
-const dlActionLogBtn = document.querySelector('#dl-action-log');
-dlActionLogBtn.addEventListener('click', downloadActionLog);
+const mpeghUiRoot = document.querySelector("#mpegh-ui");
+const dlActionLogBtn = document.querySelector("#dl-action-log");
+dlActionLogBtn?.addEventListener("click", downloadActionLog);
 let viewManager;
 let startTime;
 let lastFrameWithAction = 0;
 const actionLog = [];
 
 function onUiAction(action) {
+  // This function is called every time an ActionEvent is generated.
+  // Replace or alter this function such that the ActionEvent is sent to the UI manager instance.
   const currentTime = Date.now();
   if (!startTime) {
     startTime = currentTime;
   }
 
   const secondsElapsed = (currentTime - startTime) / 1000;
-  const framesElapsed = Math.ceil(secondsElapsed * 48000 / 1024);
+  const framesElapsed = Math.ceil((secondsElapsed * 48000) / 1024);
 
   if (framesElapsed != lastFrameWithAction) {
     actionLog.push(`<Sleep Frame="${framesElapsed}">`);
@@ -106,34 +108,34 @@ function onUiAction(action) {
 }
 
 function downloadActionLog() {
-  const content = actionLog.join('\n');
-  const mimeType = 'text/plain;charset=utf-8;';
+  const content = actionLog.join("\n");
+  const mimeType = "text/plain;charset=utf-8;";
   const blob = new Blob([content], { type: mimeType });
 
-  const a = document.createElement('a');
+  const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
-  a.download = 'ui_actions.log';
-  a.style.display = 'none';
+  a.download = "ui_actions.log";
+  a.style.display = "none";
 
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
 }
 
-function setupNavigationControls(navController) {
-  if (!navController) {
-    return
-  }
+function setupNavigationControls() {
   const keyActions = {
-    "ArrowDown": () => navController.performAction("down"),
-    "ArrowUp": () => navController.performAction("up"),
-    "ArrowLeft": () => navController.performAction("left"),
-    "ArrowRight": () => navController.performAction("right"),
-    "w": () => navController.performAction("select"),
-    "q": () => navController.performAction("back"),
+    ArrowDown: () =>
+      viewManager.getNavigationController().performAction("down"),
+    ArrowUp: () => viewManager.getNavigationController().performAction("up"),
+    ArrowLeft: () =>
+      viewManager.getNavigationController().performAction("left"),
+    ArrowRight: () =>
+      viewManager.getNavigationController().performAction("right"),
+    w: () => viewManager.getNavigationController().performAction("select"),
+    q: () => viewManager.getNavigationController().performAction("back"),
   };
-  document.addEventListener("keydown", event => {
-    const action = keyActions[event.key]
+  document.addEventListener("keydown", (event) => {
+    const action = keyActions[event.key];
     // Only prevent default and perform the action if key action is contained in setActions and is a supported function of the remote controller.
     if (action && typeof action === "function") {
       event.preventDefault();
@@ -144,14 +146,21 @@ function setupNavigationControls(navController) {
 
 async function main() {
   // read audio scene information & custom UI labels
-  const asiPromise = fetch('asi.xml').then(res => res.text());
-  const customLabelsPromise = fetch('customLabels.json').then(res => res.json());
-
-  // ASI content: file scope for later access
-  asi = await asiPromise;
+  const asiPromise = fetch("asi.xml").then((res) => res.text());
+  const customLabelsPromise = fetch("customLabels.json").then((res) =>
+    res.json(),
+  );
   customLabels = await customLabelsPromise;
-  
-  repo = new IIS_WMT.XmlSceneRepository(); // create XML scene repository with callback on UI action
+
+  // create XML scene repository
+  repo = new IIS_WMT.XmlSceneRepository(
+    () => viewManager.model,
+    (newModel) => {
+      viewManager.model = newModel;
+    },
+  );
+
+  // set callback on UI action
   repo.setOnAction(onUiAction);
   // create new viewmanager
   viewManager = new IIS_WMT.ViewManager(repo, mpeghUiRoot);
@@ -159,9 +168,7 @@ async function main() {
   const navctrlr = viewManager.getNavigationController(); // get nav controller
   setupNavigationControls(navctrlr); // bind nav controller functions to keys (arrow keys, w = OK, s = Back)
 
-
-
-  // preferredLabelLanguages is an array of language tags. It accepts BCP47 primary Language Subtags (e.g. "en", "de"). 
+  // preferredLabelLanguages is an array of language tags. It accepts BCP47 primary language subtags (e.g. "en", "de").
   // To convert a mixed array of full BCP47 tags, ISO639-1 or -2 language tags to this format, use IIS_WMT.toBCP47Array(array).
   // example to convert preferred browser languages to this format:
   // grab browser language
@@ -170,21 +177,19 @@ async function main() {
   // remove duplicates
   browserLangs = [...new Set(browserLangs)];
   viewManager.updateViewParam("preferredLabelLanguages", browserLangs);
-  
+
   // set custom labels
 
   viewManager.updateViewParam("updateCustomLabels", customLabels);
-  
+
   // parse and render audio scene given from decoder, here only dummy from xml
-  viewManager.loadFromPayload(asi);
+  repo.loadFromPayload(await asiPromise);
 }
 
-async function reload() {
-  const asiPromise = fetch('asi.xml').then(res => res.text());
-  // ASI content: file scope for later access
-  asi = await asiPromise;
+async function reload(asi = "asi.xml") {
+  const asiPromise = fetch(asi).then((res) => res.text());
   // parse and render audio scene given from decoder, here only dummy from xml
-  viewManager.loadFromPayload(asi);
+  repo.loadFromPayload(await asiPromise);
 }
 
 main();

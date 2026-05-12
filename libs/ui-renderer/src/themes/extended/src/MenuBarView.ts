@@ -1,7 +1,7 @@
 /*-----------------------------------------------------------------------------
 Software License for The Fraunhofer FDK MPEG-H Software
 
-Copyright (c) 2025 - 2025 Fraunhofer-Gesellschaft zur Förderung der angewandten
+Copyright (c) 2025 - 2026 Fraunhofer-Gesellschaft zur Förderung der angewandten
 Forschung e.V. and Contributors
 All rights reserved.
 
@@ -106,6 +106,7 @@ export class MenuBarView extends UiComponent {
     rootElement: HTMLElement,
     params: Map<string, unknown>,
     private readonly selectAction: (b: ButtonView) => UiComponentFocusable,
+    private readonly backAction: (b: ButtonView) => UiComponentFocusable | null,
   ) {
     super(rootElement, params);
     this.element = document.createElement("ul");
@@ -230,10 +231,15 @@ export class MenuBarView extends UiComponent {
       "navigationControllers",
     ) as ExtendedNavController[];
     for (const exNavCtrlr of navCtrls) {
-      if (!(exNavCtrlr instanceof ExtendedNavController)) continue;
+      if (!(exNavCtrlr instanceof ExtendedNavController)) {
+        continue;
+      }
       for (let i = 0; i < this.buttons.length; i++) {
         exNavCtrlr.setConnection(this.buttons[i], "select", () =>
           this.selectAction(this.buttons[i]),
+        );
+        exNavCtrlr.setConnection(this.buttons[i], "back", () =>
+          this.backAction(this.buttons[i]),
         );
         exNavCtrlr.setConnection(this.buttons[i], "right", this.buttons[i + 1]);
         exNavCtrlr.setConnection(this.buttons[i + 1], "left", this.buttons[i]);
@@ -254,10 +260,19 @@ export class MenuBarView extends UiComponent {
     const activeEl = firstSel?.getSelectedAudioElement();
     if (switchableElems.size > 0 && activeEl != null) {
       if (mode === "language") {
-        this.buttons[1].labelView.element.classList.add("capitalize");
-        this.buttons[1].labelView.updateContentFromLangCode(
-          activeEl.getContentLanguage(),
-        );
+        if (activeEl.getContentLanguage() != null) {
+          this.buttons[1].labelView.element.classList.add("capitalize");
+          this.buttons[1].labelView.updateContentFromLangCode(
+            activeEl.getContentLanguage(),
+          );
+        } else {
+          this.buttons[1].labelView.element.classList.remove("capitalize");
+          this.buttons[1].updateLabel(
+            (this.params.get("customLabels") as Record<string, Localizable[]>)[
+              "not available"
+            ],
+          );
+        }
       } else {
         this.buttons[1].labelView.element.classList.remove("capitalize");
         this.buttons[1].updateLabel(activeEl.labels);
@@ -267,7 +282,7 @@ export class MenuBarView extends UiComponent {
       // no switchable elems -> is in language mode by default
       this.buttons[1].setEnabled(false);
       const fallbackPreselLanguage =
-        this.viewModel.selectedPreselection.getContentLanguge();
+        this.viewModel.selectedPreselection.getContentLanguage();
       if (fallbackPreselLanguage == null) {
         this.buttons[1].labelView.element.classList.remove("capitalize");
         this.buttons[1].updateLabel(
@@ -329,7 +344,9 @@ export class MenuBarView extends UiComponent {
   setViewModel(vm: AudioSceneVM) {
     this.ac.abort();
     this.ac = new AbortController();
-    if (this.viewModel === vm) return;
+    if (this.viewModel === vm) {
+      return;
+    }
     this.viewModel = vm;
     this.updateLabels();
     this.updateAvailability();
@@ -361,5 +378,6 @@ export class MenuBarView extends UiComponent {
 
   dispose() {
     this.ac.abort();
+    super.dispose();
   }
 }

@@ -1,7 +1,7 @@
 /*-----------------------------------------------------------------------------
 Software License for The Fraunhofer FDK MPEG-H Software
 
-Copyright (c) 2025 - 2025 Fraunhofer-Gesellschaft zur Förderung der angewandten
+Copyright (c) 2025 - 2026 Fraunhofer-Gesellschaft zur Förderung der angewandten
 Forschung e.V. and Contributors
 All rights reserved.
 
@@ -88,7 +88,20 @@ export abstract class UiComponent {
     protected params: Map<string, unknown>,
   ) {}
 
+  /**
+   * Remove and re-append the element to the parent element, moving it to the end.
+   */
+  toEnd() {
+    this.rootElement.removeChild(this.element);
+    this.rootElement.append(this.element);
+  }
+
   init() {
     this.rootElement.append(this.element);
+  }
+
+  dispose() {
+    // remove element
+    this.rootElement.removeChild(this.element);
   }
 }

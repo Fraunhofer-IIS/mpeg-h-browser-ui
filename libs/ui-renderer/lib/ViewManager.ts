@@ -1,7 +1,7 @@
 /*-----------------------------------------------------------------------------
 Software License for The Fraunhofer FDK MPEG-H Software
 
-Copyright (c) 2021 - 2025 Fraunhofer-Gesellschaft zur Förderung der angewandten
+Copyright (c) 2021 - 2026 Fraunhofer-Gesellschaft zur Förderung der angewandten
 Forschung e.V. and Contributors
 All rights reserved.
 
@@ -80,7 +80,7 @@ www.iis.fraunhofer.de/amm
 amm-info@iis.fraunhofer.de
 -----------------------------------------------------------------------------*/
 
-import { SceneRepository } from "@wmt/mpeg-h-browser-ui-core";
+import { AudioSceneM, SceneRepository } from "@wmt/mpeg-h-browser-ui-core";
 
 import { View } from "./View";
 import { NavigationController } from "./NavigationController";
@@ -94,6 +94,7 @@ export class ViewManager {
   view: View;
   browserLang: string;
   isAlwaysOpened: boolean;
+  updatedViewParams = new Map<string, unknown>();
 
   constructor(
     private repo: SceneRepository,
@@ -102,12 +103,17 @@ export class ViewManager {
     this.updateTheme();
   }
 
-  loadFromPayload(payload: string | ArrayBuffer) {
-    this.viewmodel = new AudioSceneVM(
-      this.repo.loadFromPayload(payload),
-      this.repo,
-    );
-    this.view.setAudioScene(this.viewmodel);
+  set model(m: AudioSceneM) {
+    if (!this.viewmodel || !this.viewmodel.model.isEquivalentStructure(m)) {
+      this.viewmodel = new AudioSceneVM(m, this.repo);
+      this.view.setAudioScene(this.viewmodel);
+    } else {
+      this.viewmodel.model.updateStateFromModel(m);
+    }
+  }
+
+  get model() {
+    return this.viewmodel?.model;
   }
 
   /**
@@ -127,11 +133,18 @@ export class ViewManager {
       );
     }
 
-    if (this.view instanceof theme) {
+    if (this.view) {
       (this.view as View).dispose();
+      this.view = undefined;
     }
     this.view = new theme(this.rootElement);
     this.currentTheme = newTheme;
+    for (const updatedParam of this.updatedViewParams) {
+      this.view.updateViewParam(updatedParam[0], updatedParam[1]);
+    }
+    if (this.viewmodel) {
+      this.view.setAudioScene(this.viewmodel);
+    }
   }
 
   /**
@@ -160,6 +173,7 @@ export class ViewManager {
   }
 
   updateViewParam(flag: string, value: unknown): boolean {
+    this.updatedViewParams.set(flag, value);
     if (this.view) {
       return this.view.updateViewParam(flag, value);
     }
@@ -169,5 +183,6 @@ export class ViewManager {
   /** Dispose the view and clear content. */
   dispose() {
     this.view.dispose();
+    this.updatedViewParams.clear();
   }
 }

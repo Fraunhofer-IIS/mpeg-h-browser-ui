@@ -2,6 +2,8 @@
 
 The Fraunhofer IIS MPEG-H Browser UI (**mpeg-h-browser-ui**) is a software component for rendering advanced user interfaces for the MPEG-H Audio standard as defined in [ISO/IEC 23008-3:2022](https://www.iso.org/standard/83525.html). Multiple customizable UI themes are provided, making the personalization features of MPEG-H Audio experienceable in modern browser environments.
 
+For detailed documentation and usage, please have a look at the [MPEG-H Browser UI Wiki](https://github.com/Fraunhofer-IIS/mpeg-h-browser-ui/wiki).
+
 Please visit [www.mpegh.com](https://mpegh.com) to learn more about MPEG-H Audio.
 
 ## Supported architectures
@@ -46,11 +48,13 @@ After the initial build, the command
 
 can be used, to automatically copy all updated built code to the lib folders of all demo apps.
 
-## Example page
+## Example pages
 
-This repository provides following demo example page for the **mpeg-h-browser-ui**:
+This repository provides the following demo example pages for the **mpeg-h-browser-ui**:
 
-[Fraunhofer IIS MPEG-H Browser UI XML Demo](./apps/xml-demo/README.md)
+- [Fraunhofer IIS MPEG-H Browser UI XML Demo](./apps/xml-demo/README.md)
+- [Fraunhofer IIS MPEG-H Browser UI REST Demo](./apps/rest-demo/README.md)
+- [Fraunhofer IIS MPEG-H Browser UI WL-App Application Integration Demo](./apps/wlapp-demo/README.md)
 
 ## Contributing
 
@@ -65,12 +69,12 @@ Contributions may be done through a pull request to the upstream repository.
 
 - [www.mpegh.com](https://mpegh.com)
 - [Fraunhofer IIS MPEG-H Audio](https://www.iis.fraunhofer.de/en/ff/amm/broadcast-streaming/mpegh.html)
+- [MPEG-H Audio Wiki: get started with MPEG-H Audio projects](https://github.com/Fraunhofer-IIS/mpeg-h-audio/wiki)
 
 ## License
 
-Please see the [license.txt](./license.txt) file for the terms of use that apply to the software in this repository.
+Please see the [LICENSE.txt](./LICENSE.txt) file for the terms of use that apply to the software in this repository.
 
 Fraunhofer supports the development of MPEG-H products and services by offering additional software, documentation, and technical advice. In addition, it operates the MPEG-H Trademark Program to ease interoperability testing of end-products. Please visit [www.mpegh.com](https://mpegh.com) for more information.
-
 
 For more information, please contact amm-info@iis.fraunhofer.de

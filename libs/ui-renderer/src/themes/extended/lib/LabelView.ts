@@ -1,7 +1,7 @@
 /*-----------------------------------------------------------------------------
 Software License for The Fraunhofer FDK MPEG-H Software
 
-Copyright (c) 2025 - 2025 Fraunhofer-Gesellschaft zur Förderung der angewandten
+Copyright (c) 2025 - 2026 Fraunhofer-Gesellschaft zur Förderung der angewandten
 Forschung e.V. and Contributors
 All rights reserved.
 
@@ -106,6 +106,15 @@ export class LabelView extends UiComponent {
   }
 
   updateContentFromLangCode(langCode: string) {
+    if (langCode == null || langCode === "") {
+      this.isLangLabel = false;
+      if (this.element instanceof HTMLImageElement) {
+        this.element.alt = "";
+      } else {
+        this.element.textContent = "";
+      }
+      return;
+    }
     this.isLangLabel = true;
     this.langCode = langCode;
     let displayLang = langCode;
@@ -131,7 +140,9 @@ export class LabelView extends UiComponent {
    */
   updateContent(localizables: Localizable[]): void {
     this.isLangLabel = false;
-    if (localizables == null) return;
+    if (localizables == null) {
+      return;
+    }
     this.localizables = localizables;
     this.update();
   }
@@ -141,7 +152,7 @@ export class LabelView extends UiComponent {
    * Does not update content, only selects the localizable that will be displayed in the UI.
    */
   update(): void {
-    if (this.isLangLabel) {
+    if (this.isLangLabel && this.langCode != null) {
       this.updateContentFromLangCode(this.langCode);
       return;
     }

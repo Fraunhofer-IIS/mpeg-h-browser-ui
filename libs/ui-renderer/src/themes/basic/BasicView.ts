@@ -1,7 +1,7 @@
 /*-----------------------------------------------------------------------------
 Software License for The Fraunhofer FDK MPEG-H Software
 
-Copyright (c) 2025 - 2025 Fraunhofer-Gesellschaft zur Förderung der angewandten
+Copyright (c) 2025 - 2026 Fraunhofer-Gesellschaft zur Förderung der angewandten
 Forschung e.V. and Contributors
 All rights reserved.
 
@@ -87,7 +87,9 @@ import {
   AudioElementSelectionVM,
   AudioElementVM,
   AudioSceneVM,
+  PositionInteractivityVM,
   PreselectionVM,
+  ProminenceInteractivityVM,
 } from "../../../lib/AudioSceneVM";
 import {
   customLabels,
@@ -100,10 +102,13 @@ import { parseObjToCustomLabels } from "./BasicHelpers";
 
 export class BasicView implements View {
   params = new Map<string, unknown>();
+  viewModel: AudioSceneVM;
   basicViewElement: HTMLDivElement;
   presetsDiv: HTMLDivElement;
-  objectsDiv: HTMLDivElement;
+  elementsDiv: HTMLDivElement;
   selectionsDiv: HTMLDivElement;
+  acFullChange: AbortController = new AbortController();
+  acPreselChange: AbortController = new AbortController();
 
   constructor(private rootElement: HTMLElement) {
     this.basicViewElement = document.createElement("div");
@@ -119,17 +124,38 @@ export class BasicView implements View {
    * Set the audio scene view model to be used for UI generation and generate the UI.
    */
   setAudioScene(audioScene: AudioSceneVM): void {
-    this.basicViewElement.textContent = "";
+    this.viewModel = audioScene;
+    this.acFullChange.abort();
+    this.acPreselChange.abort();
+    this.acFullChange = new AbortController();
+    this.acPreselChange = new AbortController();
 
-    this.generateUIPreselectionList(audioScene);
+    this.initUI();
+
+    this.viewModel.addEventListener(
+      "change",
+      (e: Event) => {
+        const detail = (e as CustomEvent).detail;
+        if (
+          detail.type === "preselectionChanged" ||
+          detail.type === "modelUpdated"
+        ) {
+          this.updateUIPreselectionChanged();
+        }
+      },
+      { signal: this.acFullChange.signal },
+    );
+  }
+
+  private initUI() {
+    this.basicViewElement.textContent = "";
+    this.generateUIPreselectionList();
     this.basicViewElement.appendChild(this.presetsDiv);
 
-    this.generateUIObjectList(audioScene.selectedPreselection.audioElements);
-    this.basicViewElement.appendChild(this.objectsDiv);
+    this.generateUIAudioElements();
+    this.basicViewElement.appendChild(this.elementsDiv);
 
-    this.generateUISelectionsList(
-      audioScene.selectedPreselection.audioElementSelections,
-    );
+    this.generateUISelections();
     this.basicViewElement.appendChild(this.selectionsDiv);
 
     this.basicViewElement.scrollTop = 0;
@@ -139,13 +165,15 @@ export class BasicView implements View {
    * Update the UI if another preselection is selected.
    * @param preselection new selected preselection
    */
-  updateUIPreselectionChanged(preselection: PreselectionVM): void {
-    this.basicViewElement.removeChild(this.objectsDiv);
-    this.generateUIObjectList(preselection.audioElements);
-    this.basicViewElement.appendChild(this.objectsDiv);
+  updateUIPreselectionChanged(): void {
+    this.acPreselChange.abort();
+    this.acPreselChange = new AbortController();
+    this.basicViewElement.removeChild(this.elementsDiv);
+    this.generateUIAudioElements();
+    this.basicViewElement.appendChild(this.elementsDiv);
 
     this.basicViewElement.removeChild(this.selectionsDiv);
-    this.generateUISelectionsList(preselection.audioElementSelections);
+    this.generateUISelections();
     this.basicViewElement.appendChild(this.selectionsDiv);
   }
 
@@ -153,7 +181,7 @@ export class BasicView implements View {
    * Generate the preselections section of the UI.
    * @param audioScene current audio scene
    */
-  generateUIPreselectionList(audioScene: AudioSceneVM): void {
+  generateUIPreselectionList(): void {
     this.presetsDiv = document.createElement("div");
     this.presetsDiv.className = "presets";
     const presetsLabel = document.createElement("div");
@@ -172,9 +200,9 @@ export class BasicView implements View {
     const presetsInteractivityDiv = document.createElement("div");
     presetsInteractivityDiv.classList.add("interactivityitem");
     this.presetsDiv.appendChild(presetsInteractivityDiv);
-    for (const presel of audioScene.preselections) {
+    for (const presel of this.viewModel.preselections) {
       presetsInteractivityDiv.appendChild(
-        this.generateUIPreselectionButton(audioScene, presel),
+        this.generateUIPreselectionButton(presel),
       );
     }
   }
@@ -185,10 +213,7 @@ export class BasicView implements View {
    * @param preselection current preselection
    * @returns <span> containing the button
    */
-  generateUIPreselectionButton(
-    scene: AudioSceneVM,
-    preselection: PreselectionVM,
-  ): HTMLSpanElement {
+  generateUIPreselectionButton(preselection: PreselectionVM): HTMLSpanElement {
     const container = document.createElement("span");
     const label = document.createElement("label");
     label.className = "presetlabel";
@@ -197,11 +222,26 @@ export class BasicView implements View {
     radio.type = "radio";
     radio.name = "preset";
     radio.className = "preset";
-    if (scene.selectedPreselection === preselection) {
+    if (this.viewModel.selectedPreselection === preselection) {
       // add initial focus to selected preselection
       radio.classList.add("basic-focused");
     }
-    radio.checked = scene.selectedPreselection === preselection;
+    radio.checked = this.viewModel.selectedPreselection === preselection;
+
+    this.viewModel.addEventListener(
+      "change",
+      (e: Event) => {
+        const detail = (e as CustomEvent).detail;
+        if (detail.type === "preselectionChanged") {
+          const isSelected =
+            this.viewModel.selectedPreselection === preselection;
+          radio.checked = isSelected;
+          radio.classList.toggle("basic-focused", isSelected);
+        }
+      },
+      { signal: this.acFullChange.signal },
+    );
+
     const localizable = preselection.getLabelPreferredInLangs(
       this.params.get("preferredLabelLanguages") as string[],
     );
@@ -210,23 +250,21 @@ export class BasicView implements View {
     label.appendChild(textNode);
     label.lang = localizable?.lang;
     radio.addEventListener("input", () => {
-      scene.selectPreselection(preselection);
-      this.updateUIPreselectionChanged(preselection);
+      this.viewModel.selectPreselection(preselection);
     });
     return container;
   }
 
   /**
-   * Generate the objects section of the UI.
-   * @param objects all audio elements of this preselection
+   * Generate the audioElements section of the UI.
    */
-  generateUIObjectList(objects: AudioElementVM[]): void {
-    this.objectsDiv = document.createElement("div");
-    this.objectsDiv.className = "audioobjects";
-    for (const object of objects) {
-      if (object.hasInteractivity()) {
-        this.objectsDiv.appendChild(
-          this.generateUIAudioObjectOrSelection(object),
+  generateUIAudioElements(): void {
+    this.elementsDiv = document.createElement("div");
+    this.elementsDiv.className = "audioelements";
+    for (const ae of this.viewModel.selectedPreselection.audioElements) {
+      if (ae.hasInteractivity()) {
+        this.elementsDiv.appendChild(
+          this.generateUIAudioElementOrSelection(ae),
         );
       }
     }
@@ -234,69 +272,44 @@ export class BasicView implements View {
 
   /**
    * Generate sliders (interavtivity controls) for an audio element or an element selection.
-   * @param object the audio element or selection.
+   * @param audioElement the audio element or selection.
    * @param inSelection whether it is a selection or not.
    * @returns sliders in a <div> element.
    */
-  generateUIAudioObjectOrSelection(
-    object: AudioElementVM | AudioElementSelectionVM,
+  generateUIAudioElementOrSelection(
+    audioElement: AudioElementVM | AudioElementSelectionVM,
     inSelection: boolean = false,
   ): HTMLDivElement {
     const container = document.createElement("div");
     if (!inSelection) {
-      container.className = "object";
-      const objectLabel = document.createElement("div");
-      objectLabel.className = "headerlabel";
-      const localizable = object.getLabelPreferredInLangs(
+      container.className = "audioelement";
+      const audioElementLabel = document.createElement("div");
+      audioElementLabel.className = "headerlabel";
+      const localizable = audioElement.getLabelPreferredInLangs(
         this.params.get("preferredLabelLanguages") as string[],
       );
-      objectLabel.textContent = localizable.value;
-      objectLabel.lang = localizable.lang;
-      container.appendChild(objectLabel);
+      audioElementLabel.textContent = localizable.value;
+      audioElementLabel.lang = localizable.lang;
+      container.appendChild(audioElementLabel);
     }
-    if (object.hasProminenceControl()) {
+    if (audioElement.hasProminenceControl()) {
+      container.appendChild(
+        this.generateUINumericProperty(audioElement.prominenceInteractivity),
+      );
+    }
+    if (audioElement.hasAzimuthControl()) {
       container.appendChild(
         this.generateUINumericProperty(
-          (this.params.get("customLabels") as Record<string, Localizable[]>)[
-            "prominence"
-          ],
-          object.prominenceInteractivity.getRange(),
-          object.prominenceInteractivity.getDomainInfo().step,
-          object.prominenceInteractivity.prominence,
-          object.prominenceInteractivity.setProminence.bind(
-            object.prominenceInteractivity,
-          ),
+          audioElement.positionInteractivity,
+          "azimuth",
         ),
       );
     }
-    if (object.hasAzimuthControl()) {
+    if (audioElement.hasElevationControl()) {
       container.appendChild(
         this.generateUINumericProperty(
-          (this.params.get("customLabels") as Record<string, Localizable[]>)[
-            "azimuth"
-          ],
-          object.positionInteractivity.getRange("azimuth"),
-          object.positionInteractivity.getDomainInfo("azimuth").step,
-          object.positionInteractivity.azimuth,
-          object.positionInteractivity.setAzimuth.bind(
-            object.positionInteractivity,
-          ),
-          true,
-        ),
-      );
-    }
-    if (object.hasElevationControl()) {
-      container.appendChild(
-        this.generateUINumericProperty(
-          (this.params.get("customLabels") as Record<string, Localizable[]>)[
-            "elevation"
-          ],
-          object.positionInteractivity.getRange("elevation"),
-          object.positionInteractivity.getDomainInfo("elevation").step,
-          object.positionInteractivity.elevation,
-          object.positionInteractivity.setElevation.bind(
-            object.positionInteractivity,
-          ),
+          audioElement.positionInteractivity,
+          "elevation",
         ),
       );
     }
@@ -305,12 +318,12 @@ export class BasicView implements View {
 
   /**
    * Generate the UI for a list of audio element selections.
-   * @param selections the list of selections that the UI should be generated for
    */
-  generateUISelectionsList(selections: AudioElementSelectionVM[]): void {
+  generateUISelections(): void {
     this.selectionsDiv = document.createElement("div");
     this.selectionsDiv.className = "audioswitches";
-    for (const selection of selections) {
+    for (const selection of this.viewModel.selectedPreselection
+      .audioElementSelections) {
       const selDiv = this.generateUISelection(selection);
       if (selDiv != null) {
         this.selectionsDiv.appendChild(this.generateUISelection(selection));
@@ -328,27 +341,27 @@ export class BasicView implements View {
       return null;
     }
     const container = document.createElement("div");
-    container.className = "object";
-    const objectLabel = document.createElement("div");
-    objectLabel.className = "headerlabel";
+    container.className = "audioelement";
+    const audioElementLabel = document.createElement("div");
+    audioElementLabel.className = "headerlabel";
     const localizable = selection.getLabelPreferredInLangs(
       this.params.get("preferredLabelLanguages") as string[],
     );
-    objectLabel.textContent = localizable.value;
-    objectLabel.lang = localizable.lang;
-    container.appendChild(objectLabel);
+    audioElementLabel.textContent = localizable.value;
+    audioElementLabel.lang = localizable.lang;
+    container.appendChild(audioElementLabel);
 
     const optionsDiv = document.createElement("div");
     optionsDiv.className = "interactivityitem";
     container.appendChild(optionsDiv);
 
     for (const obj of selection.audioElements) {
-      const optionDiv = this.generateUIObjectSelectionButton(selection, obj);
+      const optionDiv = this.generateUISelectionOptionButton(selection, obj);
       optionsDiv.appendChild(optionDiv);
     }
 
     container.appendChild(
-      this.generateUIAudioObjectOrSelection(selection, true),
+      this.generateUIAudioElementOrSelection(selection, true),
     );
     return container;
   }
@@ -356,12 +369,12 @@ export class BasicView implements View {
   /**
    * Generate one button representing an audio element in a audio element selection.
    * @param selection "parent" selection of the audio element
-   * @param object audio element that this button represents
+   * @param audioElement audio element that this button represents
    * @returns <span> containing a radio button
    */
-  generateUIObjectSelectionButton(
+  generateUISelectionOptionButton(
     selection: AudioElementSelectionVM,
-    object: AudioElementVM,
+    audioElement: AudioElementVM,
   ): HTMLSpanElement {
     const container = document.createElement("span");
     const label = document.createElement("label");
@@ -373,10 +386,10 @@ export class BasicView implements View {
       "selection_" +
       selection.id +
       "_" +
-      selection.getLabelPreferredInLangs(["en"]);
+      selection.getLabelPreferredInLangs(["en"])?.value;
     radio.className = "option";
-    radio.checked = selection.getSelectedAudioElementId() === object.model.id;
-    const localizable = object.getLabelPreferredInLangs(
+    radio.checked = selection.getSelectedAudioElement() === audioElement;
+    const localizable = audioElement.getLabelPreferredInLangs(
       this.params.get("preferredLabelLanguages") as string[],
     );
     label.appendChild(radio);
@@ -384,29 +397,68 @@ export class BasicView implements View {
     label.appendChild(textNode);
     label.lang = localizable?.lang;
     radio.addEventListener("input", () => {
-      selection.selectAudioElement(object);
+      selection.selectAudioElement(audioElement);
     });
+    selection.addEventListener(
+      "change",
+      (e: Event) => {
+        const detail = (e as CustomEvent).detail;
+        if (
+          detail.type === "audioElementSelectionChanged" &&
+          detail.source === "remote"
+        ) {
+          radio.checked = selection.getSelectedAudioElement() === audioElement;
+        }
+      },
+      { signal: this.acPreselChange.signal },
+    );
     return container;
   }
 
   /**
    * Generate one numeric slider.
-   * @param localizables localized labels for the slider.
-   * @param range value range to be used for the slider
-   * @param step value step that the value will be quantized to
-   * @param currentValue current value which will be the initial value
-   * @param setter setter method to update the value in the model
-   * @param inverted whether the slider should invert its range
+   * @param baseViewModel view model which the slider should base on.
+   * @param positionType if viewModel is of type PositionInteractivityVM, specifies the position axis
    * @returns slider in a <div> element
    */
   generateUINumericProperty(
-    localizables: Localizable[],
-    range: [number, number],
-    step: number,
-    currentValue: number,
-    setter: (v: number) => unknown,
-    inverted = false,
+    baseViewModel: ProminenceInteractivityVM | PositionInteractivityVM,
+    positionType?: "azimuth" | "elevation",
   ): HTMLDivElement {
+    const localizables = (
+      this.params.get("customLabels") as Record<string, Localizable[]>
+    )[
+      baseViewModel instanceof ProminenceInteractivityVM
+        ? "prominence"
+        : positionType
+    ];
+    const range =
+      baseViewModel instanceof ProminenceInteractivityVM
+        ? (baseViewModel as ProminenceInteractivityVM).getRange()
+        : (baseViewModel as PositionInteractivityVM).getRange(positionType);
+    let step =
+      baseViewModel instanceof ProminenceInteractivityVM
+        ? baseViewModel.getDomainInfo().step
+        : baseViewModel.getDomainInfo(positionType).step;
+    if (positionType == "azimuth") {
+      step *= 5;
+    } else if (positionType == "elevation") {
+      step *= 3;
+    } else if (baseViewModel instanceof ProminenceInteractivityVM) {
+      step *= 2;
+    }
+    const currentValue =
+      baseViewModel instanceof ProminenceInteractivityVM
+        ? baseViewModel.prominence
+        : baseViewModel[positionType];
+    const setter =
+      baseViewModel instanceof ProminenceInteractivityVM
+        ? baseViewModel.setProminence.bind(baseViewModel)
+        : (toSet: number) => {
+            baseViewModel[positionType] = toSet;
+          };
+    const inverted = positionType === "azimuth";
+
     const container = document.createElement("div");
     container.className = "interactivityitem";
     const label = document.createElement("span");
@@ -425,12 +477,28 @@ export class BasicView implements View {
     // assign min, max, step & value
     slider.min = inverted ? `${-1 * range[1]}` : `${range[0]}`;
     slider.max = inverted ? `${-1 * range[0]}` : `${range[1]}`;
-    slider.step = `${step}`;
+    slider.dataset.remoteStep = `${step}`;
     slider.valueAsNumber = inverted ? -1 * currentValue : currentValue;
     slider.addEventListener("change", () => {
       const value = inverted ? -1 * slider.valueAsNumber : slider.valueAsNumber;
       setter(value);
     });
+    baseViewModel.addEventListener(
+      "change",
+      (e: Event) => {
+        const detail = (e as CustomEvent).detail;
+        if (
+          detail.type ===
+            (baseViewModel instanceof ProminenceInteractivityVM
+              ? "prominenceChanged"
+              : `${positionType}Changed`) &&
+          detail.source === "remote"
+        ) {
+          slider.valueAsNumber = inverted ? -1 * detail.value : detail.value;
+        }
+      },
+      { signal: this.acPreselChange.signal },
+    );
     container.appendChild(slider);
     return container;
   }
@@ -475,7 +543,9 @@ export class BasicView implements View {
     let currentLabels: Record<string, Localizable[]> = this.params.get(
       "customLabels",
     ) as Record<string, Localizable[]>;
-    if (currentLabels == null) currentLabels = {};
+    if (currentLabels == null) {
+      currentLabels = {};
+    }
     for (const key of Object.keys(customLabelsParsed)) {
       // add new entries
       if (currentLabels[key] == null) {

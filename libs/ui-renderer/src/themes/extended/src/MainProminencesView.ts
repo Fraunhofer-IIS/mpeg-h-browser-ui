@@ -1,7 +1,7 @@
 /*-----------------------------------------------------------------------------
 Software License for The Fraunhofer FDK MPEG-H Software
 
-Copyright (c) 2025 - 2025 Fraunhofer-Gesellschaft zur Förderung der angewandten
+Copyright (c) 2025 - 2026 Fraunhofer-Gesellschaft zur Förderung der angewandten
 Forschung e.V. and Contributors
 All rights reserved.
 
@@ -107,9 +107,7 @@ export class MainProminencesView extends PopupView {
   }
 
   setViewModel(vm: PreselectionVM) {
-    this.dispose();
     this.ac = new AbortController();
-    this.init();
 
     // find prominence interactive elements
     const selFilter = this.params.get("kindFiltersProminence") as [
@@ -117,7 +115,11 @@ export class MainProminencesView extends PopupView {
       KindM[],
       KindM[]?,
     ][];
-
+    if (this.viewModel == null) {
+      this.viewModel = [];
+    }
+    // update selection view
+    const countPrev = this.viewModel.length;
     for (let i = 0; i < selFilter.length; i++) {
       const newVm = vm.getInteractiveAesOfKinds(selFilter[i][1], "prominence");
       if (i === 0 || newVm.length >= 1) {
@@ -128,13 +130,23 @@ export class MainProminencesView extends PopupView {
         break;
       }
     }
-    for (const aesOrAe of this.viewModel) {
+    const countNew = this.viewModel.length;
+    // unregister all btns that are not needed anymore in nav graph
+    for (let i = countPrev - 1; i >= countNew; i--) {
+      this.unregisterComponentFirstLayer(this.prominences[i]);
+      this.prominences[i].dispose();
+      this.prominences.splice(i, 1);
+    }
+    // register all new sliders
+    for (let i = countPrev; i < countNew; i++) {
       const sl = new SliderView(this.element, this.params, "prominence");
-      sl.setViewModel(aesOrAe, true);
       this.prominences.push(sl);
       this.registerComponentFirstLayer(sl, false);
     }
-    if (this.viewModel.length <= 1) {
+    for (let i = 0; i < this.viewModel.length; i++) {
+      this.prominences[i].setViewModel(this.viewModel[i], true);
+    }
+    if (this.viewModel.length < 1) {
       this.hide();
     }
   }
@@ -151,12 +163,12 @@ export class MainProminencesView extends PopupView {
   }
 
   dispose() {
-    super.dispose();
     // clear navigation graph
     if (this.prominences != null) {
       for (const prom of this.prominences) {
         this.unregisterComponentFirstLayer(prom);
       }
     }
+    super.dispose();
   }
 }

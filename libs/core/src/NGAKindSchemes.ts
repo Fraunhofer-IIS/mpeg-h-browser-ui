@@ -1,7 +1,7 @@
 /*-----------------------------------------------------------------------------
 Software License for The Fraunhofer FDK MPEG-H Software
 
-Copyright (c) 2025 - 2025 Fraunhofer-Gesellschaft zur Förderung der angewandten
+Copyright (c) 2025 - 2026 Fraunhofer-Gesellschaft zur Förderung der angewandten
 Forschung e.V. and Contributors
 All rights reserved.
 
@@ -96,26 +96,6 @@ export function toLocalizables(
   // custom implementation for further kind schemes may be added here
 }
 
-// MPEG-H 3D Audio content kind labels according to ISO/IEC 23008-3:2022
-
-const mae_contentKindLabels: Record<number, Localizable[]> = {
-  0: [new Localizable("undefined", "en")],
-  1: [new Localizable("complete main", "en")],
-  2: [new Localizable("dialogue", "en")],
-  3: [new Localizable("music", "en")],
-  4: [new Localizable("effect", "en")],
-  5: [new Localizable("mixed", "en")],
-  6: [new Localizable("LFE", "en")],
-  7: [new Localizable("voiceover", "en")],
-  8: [new Localizable("spokensubtitle", "en")],
-  9: [new Localizable("audiodescription/visually impaired", "en")],
-  10: [new Localizable("commentary", "en")],
-  11: [new Localizable("hearing impaired", "en")],
-  12: [new Localizable("emergency", "en")],
-  // 13: [new Localizable("reserved", "en")],
-  // 14: [new Localizable("reserved", "en")],
-  // 15: [new Localizable("reserved", "en")],
-};
 // MPEG-H 3D Audio group preset labels according to ISO/IEC 23008-3:2022
 const mae_groupPresetLabels: Record<number, Localizable[]> = {
   0: [new Localizable("undefined", "en")],
@@ -150,4 +130,24 @@ const mae_groupPresetLabels: Record<number, Localizable[]> = {
   // 29: [new Localizable("reserved for use outside of ISO scope", "en")],
   // 30: [new Localizable("reserved for use outside of ISO scope", "en")],
   31: [new Localizable("other", "en")],
+};
+
+// MPEG-H 3D Audio content kind labels according to ISO/IEC 23008-3:2022
+const mae_contentKindLabels: Record<number, Localizable[]> = {
+  0: [new Localizable("undefined", "en")],
+  1: [new Localizable("complete main", "en")],
+  2: [new Localizable("dialogue", "en")],
+  3: [new Localizable("music", "en")],
+  4: [new Localizable("effect", "en")],
+  5: [new Localizable("mixed", "en")],
+  6: [new Localizable("LFE", "en")],
+  7: [new Localizable("voiceover", "en")],
+  8: [new Localizable("spokensubtitle", "en")],
+  9: [new Localizable("audiodescription/visually impaired", "en")],
+  10: [new Localizable("commentary", "en")],
+  11: [new Localizable("hearing impaired", "en")],
+  12: [new Localizable("emergency", "en")],
+  // 13: [new Localizable("reserved", "en")],
+  // 14: [new Localizable("reserved", "en")],
+  // 15: [new Localizable("reserved", "en")],
 };

@@ -6,7 +6,7 @@ When the user interacts with the audio scene through the UI, a user interaction 
 
 ## Usage
 
-Build the core and the renderer libs of the MPEG-H UI
+Build the core and the UI renderer libraries of the MPEG-H Browser UI.
 
 Copy the files
 ```

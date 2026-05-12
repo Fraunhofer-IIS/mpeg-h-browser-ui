@@ -10,7 +10,10 @@ export default defineConfig([
     files: ["**/*.{js,mjs,cjs,ts,mts,cts}"],
     plugins: { js },
     extends: ["js/recommended"],
-    languageOptions: { globals: globals.browser },
+    languageOptions: {
+      globals: globals.browser,
+      parserOptions: { tsconfigRootDir: import.meta.dirname },
+    },
     rules: {
       "@typescript-eslint/no-unused-vars": [
         "error",

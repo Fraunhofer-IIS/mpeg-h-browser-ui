@@ -1,7 +1,7 @@
 /*-----------------------------------------------------------------------------
 Software License for The Fraunhofer FDK MPEG-H Software
 
-Copyright (c) 2025 - 2025 Fraunhofer-Gesellschaft zur Förderung der angewandten
+Copyright (c) 2025 - 2026 Fraunhofer-Gesellschaft zur Förderung der angewandten
 Forschung e.V. and Contributors
 All rights reserved.
 
@@ -114,6 +114,7 @@ export class SliderView extends UiComponentFocusable {
   sliderElement: HTMLInputElement;
   viewModel: AudioElementSelectionVM | AudioElementVM;
   private _type: SliderType;
+  private _step: number;
 
   protected ac = new AbortController();
 
@@ -168,6 +169,7 @@ export class SliderView extends UiComponentFocusable {
     this.increaseBtn.element.classList.add("sliderbutton");
     this.element.append(this.sliderContainer);
     super.init();
+    this.registerSliderControls();
   }
 
   setViewModel(
@@ -178,11 +180,9 @@ export class SliderView extends UiComponentFocusable {
       // no change
       return false;
     }
-    this.dispose();
+    this.ac.abort();
     this.ac = new AbortController();
-    this.init();
 
-    this.registerSliderControls();
     if (
       !(vm instanceof AudioElementSelectionVM || vm instanceof AudioElementVM)
     ) {
@@ -271,22 +271,35 @@ export class SliderView extends UiComponentFocusable {
   }
 
   set type(type: SliderType) {
-    if (type === this._type) return;
+    if (type === this._type) {
+      return;
+    }
 
     this._type = type;
+    if (this._type == "azimuth") {
+      this._step = 5;
+    } else if (this._type == "elevation") {
+      this._step = 3;
+    } else if (this._type == "prominence") {
+      this._step = 2;
+    }
   }
   get type() {
     return this._type;
   }
 
+  get step() {
+    return this._step;
+  }
+
   decrease(__b: ButtonView | undefined = undefined) {
-    this.sliderElement.stepDown();
+    this.sliderElement.stepDown(this.step);
     this.sliderElement.dispatchEvent(new Event("input"));
     return this;
   }
 
   increase(__b: ButtonView | undefined = undefined) {
-    this.sliderElement.stepUp();
+    this.sliderElement.stepUp(this.step);
     this.sliderElement.dispatchEvent(new Event("input"));
     return this;
   }
@@ -297,7 +310,9 @@ export class SliderView extends UiComponentFocusable {
     ) as ExtendedNavController[];
     if (exnavs != null && exnavs.length != null) {
       for (const exnav of exnavs) {
-        if (!exnav.setConnection) continue;
+        if (!exnav.setConnection) {
+          continue;
+        }
         exnav.setConnection(this, "left", this.decrease.bind(this), true);
         exnav.setConnection(this, "right", this.increase.bind(this), true);
       }
@@ -313,11 +328,13 @@ export class SliderView extends UiComponentFocusable {
     ) as ExtendedNavController[];
     if (exnavs != null && exnavs.length != null) {
       for (const exnav of exnavs) {
-        if (!exnav.setConnection) continue;
+        if (!exnav.setConnection) {
+          continue;
+        }
         exnav.setConnection(this, "left", undefined, true);
         exnav.setConnection(this, "right", undefined, true);
       }
     }
-    this.element.remove();
+    super.dispose();
   }
 }
