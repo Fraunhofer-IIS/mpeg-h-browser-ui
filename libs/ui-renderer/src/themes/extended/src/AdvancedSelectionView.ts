@@ -96,8 +96,9 @@ export class AdvancedSelectionView extends PopupView {
     rootElement: HTMLElement,
     params: Map<string, unknown>,
     parentFocusElement: UiComponentFocusable,
+    closedAction: () => void,
   ) {
-    super(rootElement, params, parentFocusElement);
+    super(rootElement, params, parentFocusElement, closedAction);
     this.init();
   }
 

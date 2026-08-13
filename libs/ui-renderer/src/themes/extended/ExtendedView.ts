@@ -256,6 +256,7 @@ export class ExtendedView implements View {
         { signal: this.ac2.signal },
       );
     }
+    this.menuBar?.updateAvailability();
   }
 
   private updateMainSelection() {
@@ -329,6 +330,9 @@ export class ExtendedView implements View {
         this.menuBar.containers[0],
         this.params,
         this.menuBar.buttons[0],
+        () => {
+          this.menuBar.buttons[0]?.setActive(false);
+        },
       ),
     );
     this.subViews.push(
@@ -336,6 +340,9 @@ export class ExtendedView implements View {
         this.menuBar.containers[1],
         this.params,
         this.menuBar.buttons[1],
+        () => {
+          this.menuBar.buttons[1]?.setActive(false);
+        },
       ),
     );
     this.subViews.push(
@@ -343,6 +350,9 @@ export class ExtendedView implements View {
         this.menuBar.containers[2],
         this.params,
         this.menuBar.buttons[2],
+        () => {
+          this.menuBar.buttons[2]?.setActive(false);
+        },
       ),
     );
     this.subViews.push(
@@ -357,6 +367,9 @@ export class ExtendedView implements View {
             }
           }
           return null;
+        },
+        () => {
+          this.menuBar.buttons[3]?.setActive(false);
         },
       ),
     );

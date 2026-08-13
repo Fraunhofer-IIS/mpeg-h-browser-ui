@@ -265,6 +265,7 @@ export class XmlSceneParser {
 
   static parseAudioSwitchGroup(xmlNode: Element) {
     let activeAudioObject: AudioElementM;
+    let defaultAudioObject: AudioElementM;
     const audioObjects: AudioElementM[] = [];
     const objectNodes = xmlNode.getElementsByTagName("audioElement");
     const isActionAllowed =
@@ -275,6 +276,9 @@ export class XmlSceneParser {
       const object = this.parseAudioObject(objectNodes.item(j));
       if (objectNodes.item(j).getAttribute("isActive") === "true") {
         activeAudioObject = object;
+      }
+      if (objectNodes.item(j).getAttribute("isDefault") === "true") {
+        defaultAudioObject = object;
       }
       if (
         isActionAllowed ||
@@ -294,11 +298,12 @@ export class XmlSceneParser {
 
     return new AudioElementSelectionM(
       new AudioElementsM(audioObjects),
-      activeAudioObject,
+      defaultAudioObject,
       properties?.positionInteractivity,
       properties?.prominenceInteractivity,
       metadata.id,
       metadata.labels,
+      activeAudioObject,
     );
   }
 
@@ -325,6 +330,7 @@ export class XmlSceneParser {
     const uuid = xmlRoot.getAttribute("uuid");
     const presets: PreselectionM[] = [];
     let activePreset: PreselectionM;
+    let defaultPreset: PreselectionM;
 
     const presetNodes = xmlRoot.getElementsByTagName("preset");
     for (let i = 0; i < presetNodes.length; ++i) {
@@ -354,9 +360,12 @@ export class XmlSceneParser {
       if (presetNodes.item(i).getAttribute("isActive") === "true") {
         activePreset = preset;
       }
+      if (presetNodes.item(i).getAttribute("isDefault") === "true") {
+        defaultPreset = preset;
+      }
       presets.push(preset);
     }
-    return new AudioSceneM(presets, activePreset, uuid);
+    return new AudioSceneM(presets, activePreset, uuid, defaultPreset);
   }
 
   static parseAudioPresetList_v9(xmlRoot: HTMLElement) {
@@ -404,19 +413,23 @@ export class XmlSceneParser {
     const xmlRoot = xmlDoc.documentElement;
     const uuid = xmlRoot.getAttribute("uuid");
     const version = xmlRoot.getAttribute("version");
+    const configChanged = xmlRoot.getAttribute("configChanged") === "true";
 
     switch (version) {
+      case "11.1":
       case "11.0":
       case "10.0":
         return {
           uuid,
           version,
+          configChanged,
           ngaInteractivity: this.parseAudioPresetList_v11(xmlRoot),
         };
       case "9.0":
         return {
           uuid,
           version,
+          configChanged,
           ngaInteractivity: this.parseAudioPresetList_v9(xmlRoot),
         };
       default:

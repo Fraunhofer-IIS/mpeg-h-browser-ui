@@ -118,8 +118,9 @@ export class AdvancedView extends PopupView {
     private getResetFocusTarget: () => UiComponentFocusable = () => {
       return null;
     },
+    closedAction: () => void,
   ) {
-    super(rootElement, params, parentFocusElement);
+    super(rootElement, params, parentFocusElement, closedAction);
     this.init();
   }
 
@@ -295,6 +296,9 @@ export class AdvancedView extends PopupView {
           this.interactivityContainer,
           this.params,
           this.selectionButton,
+          () => {
+            this.selectionButton?.setActive(false);
+          },
         );
       }
       this.advancedSelectionView.setViewModel(this.currentAeOrAes);

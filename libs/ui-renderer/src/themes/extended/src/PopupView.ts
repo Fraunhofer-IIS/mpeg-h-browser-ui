@@ -96,6 +96,7 @@ export abstract class PopupView extends UiComponent {
     rootElement: HTMLElement,
     params: Map<string, unknown>,
     protected parentFocusElement: UiComponentFocusable,
+    protected closedAction: () => void,
   ) {
     super(rootElement, params);
   }
@@ -288,6 +289,7 @@ export abstract class PopupView extends UiComponent {
         }
       }
     }
+    this.closedAction();
   }
 
   get shown() {

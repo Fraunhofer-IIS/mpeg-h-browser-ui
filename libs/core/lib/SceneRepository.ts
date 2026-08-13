@@ -86,6 +86,7 @@ export type UiActionCallback = (actionString: string) => void;
 
 export type Action =
   | { type: "reset" }
+  | { type: "getCurrentScene" }
   | {
       type: "selectPreferredDisplayLanguage";
       languageCode: string;

@@ -101,6 +101,9 @@ export class MenuBarView extends UiComponent {
   buttons: ButtonView[];
   labels: LabelView[];
   ac = new AbortController();
+  private currentMainSelections: AudioElementSelectionVM[] = [];
+  private currentProminenceElems: (AudioElementSelectionVM | AudioElementVM)[] =
+    [];
 
   constructor(
     rootElement: HTMLElement,
@@ -257,6 +260,7 @@ export class MenuBarView extends UiComponent {
     const firstSel: AudioElementSelectionVM = switchableElems
       ?.keys()
       ?.next()?.value;
+    this.currentMainSelections = [firstSel];
     const activeEl = firstSel?.getSelectedAudioElement();
     if (switchableElems.size > 0 && activeEl != null) {
       if (mode === "language") {
@@ -303,6 +307,7 @@ export class MenuBarView extends UiComponent {
     mode: string = "voice_accessibility",
     prominences: (AudioElementSelectionVM | AudioElementVM)[] = [],
   ) {
+    this.currentProminenceElems = prominences;
     this.labels[2].updateContent(
       (this.params.get("customLabels") as Record<string, Localizable[]>)[mode],
     );
@@ -337,8 +342,34 @@ export class MenuBarView extends UiComponent {
   updateAvailability() {
     const interactive = this.viewModel.selectedPreselection.hasInteractivity();
     this.buttons[0].setEnabled(this.viewModel.preselections?.length > 1);
-    this.buttons[2].setEnabled(interactive);
-    this.buttons[3].setEnabled(interactive);
+    let allOptionsInMain = true;
+    for (const aes of this.viewModel.selectedPreselection
+      .audioElementSelections) {
+      if (
+        aes.hasAzimuthControl() ||
+        aes.hasElevationControl() ||
+        aes.hasDistanceControl() ||
+        (aes.audioElements?.length > 1 &&
+          !this.currentMainSelections.includes(aes)) ||
+        (aes.hasProminenceControl() &&
+          !this.currentProminenceElems.includes(aes))
+      ) {
+        allOptionsInMain = false;
+        break;
+      }
+    }
+    for (const ae of this.viewModel.selectedPreselection.audioElements) {
+      if (
+        ae.hasAzimuthControl() ||
+        ae.hasElevationControl() ||
+        ae.hasDistanceControl() ||
+        (ae.hasProminenceControl() && !this.currentProminenceElems.includes(ae))
+      ) {
+        allOptionsInMain = false;
+        break;
+      }
+    }
+    this.buttons[3].setEnabled(interactive && !allOptionsInMain);
   }
 
   setViewModel(vm: AudioSceneVM) {
@@ -359,7 +390,6 @@ export class MenuBarView extends UiComponent {
           detail.type === "modelUpdated"
         ) {
           this.updateLabels();
-          this.updateAvailability();
         }
       },
       { signal: this.ac.signal },

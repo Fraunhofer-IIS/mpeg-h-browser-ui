@@ -92,7 +92,7 @@ interface DispatchParams {
   paramBool?: boolean;
 }
 
-type XmlVersion = "9.0" | "10.0" | "11.0";
+type XmlVersion = "9.0" | "10.0" | "11.0" | "11.1";
 
 export class XmlSceneRepository extends EventTarget implements SceneRepository {
   uuid: string;
@@ -109,7 +109,7 @@ export class XmlSceneRepository extends EventTarget implements SceneRepository {
   private currentResolve: ((value: unknown) => void) | null = null;
 
   private static readonly systemSettingTypes = [
-    0, 10, 11, 12, 20, 21, 31, 70, 71,
+    0, 10, 11, 12, 20, 21, 31, 70, 71, 100,
   ];
 
   constructor(
@@ -166,13 +166,22 @@ export class XmlSceneRepository extends EventTarget implements SceneRepository {
   }
 
   loadFromPayload(payload: string | ArrayBuffer): Promise<AudioSceneM> {
-    const { uuid, version, ngaInteractivity } = XmlSceneParser.parseScene(
-      this.toStringPayload(payload),
-    );
-    this.uuid = uuid;
-    this.version = version;
-    this.setCurrent(ngaInteractivity);
-    return Promise.resolve(ngaInteractivity);
+    const updated = XmlSceneParser.parseScene(this.toStringPayload(payload));
+    const configChanged =
+      this.uuid !== updated.uuid ||
+      this.version !== updated.version ||
+      updated.configChanged;
+    if (configChanged) {
+      this.dispatchQueue = [];
+    }
+    if (configChanged || !this.isThrottling) {
+      this.uuid = updated.uuid;
+      this.version = updated.version;
+      this.setCurrent(updated.ngaInteractivity);
+      return Promise.resolve(updated.ngaInteractivity);
+    } else {
+      return Promise.resolve(this.getCurrent());
+    }
   }
 
   setOnAction(
@@ -196,7 +205,15 @@ export class XmlSceneRepository extends EventTarget implements SceneRepository {
     ) {
       return Promise.resolve(this.loadFromPayload(returned_data));
     } else {
-      return null;
+      if (
+        ![0, 30, 70, 100].includes(
+          XmlSceneRepository.toDispatchParams(action).actionType,
+        ) &&
+        ["11.1"].includes(this.version)
+      ) {
+        return this.applyAction({ type: "getCurrentScene" }, options);
+      }
+      return this.load();
     }
   }
 
@@ -207,10 +224,7 @@ export class XmlSceneRepository extends EventTarget implements SceneRepository {
   ): Promise<unknown> {
     const dispatchParams = XmlSceneRepository.toDispatchParams(action);
 
-    queueEdit: if (
-      dispatchParams.actionType == 0 ||
-      dispatchParams.actionType == 30
-    ) {
+    queueEdit: if ([0, 30].includes(dispatchParams.actionType)) {
       // reset or preset change: delete all previous enqued actions
       // this also deletes selectPreferredDisplayLanguage and selectPreferredAudioLanguage actions!
       this.dispatchQueue = [dispatchParams];
@@ -232,11 +246,13 @@ export class XmlSceneRepository extends EventTarget implements SceneRepository {
           }
           // move the updated action to the end of the queue
           this.dispatchQueue.push(this.dispatchQueue.splice(index, 1)[0]);
+          this.queueDeferAudioSceneFetching();
           break queueEdit;
         }
       }
       // default: append to queue
       this.dispatchQueue.push(dispatchParams);
+      this.queueDeferAudioSceneFetching();
     }
 
     // wait for promise if currently throttling
@@ -251,6 +267,23 @@ export class XmlSceneRepository extends EventTarget implements SceneRepository {
     this.processQueue(uuid);
 
     return this.currentPromise;
+  }
+
+  private queueDeferAudioSceneFetching() {
+    // move getCurrentScene to the end of the queue if at second last position
+    if (
+      this.dispatchQueue?.[this.dispatchQueue.length - 2]?.actionType === 100
+    ) {
+      if (
+        this.dispatchQueue?.[this.dispatchQueue.length - 1]?.actionType === 100
+      ) {
+        this.dispatchQueue.pop();
+        return;
+      }
+      this.dispatchQueue.push(
+        this.dispatchQueue.splice(this.dispatchQueue.length - 2, 1)[0],
+      );
+    }
   }
 
   private async processQueue(uuid: string): Promise<void> {
@@ -304,6 +337,9 @@ export class XmlSceneRepository extends EventTarget implements SceneRepository {
     switch (action.type) {
       case "reset":
         params.actionType = 0;
+        break;
+      case "getCurrentScene":
+        params.actionType = 100;
         break;
       case "selectPreselection":
         params.actionType = 30;
