@@ -308,8 +308,7 @@ export class ProminenceInteractivityVM extends InteractiveVM {
 export class AudioElementVM extends InteractiveVM {
   private readonly _positionInteractivity: PositionInteractivityVM | undefined;
   private readonly _prominenceInteractivity:
-    | ProminenceInteractivityVM
-    | undefined;
+    ProminenceInteractivityVM | undefined;
   constructor(
     public readonly model: AudioElementM,
     repository: SceneRepository,
@@ -491,8 +490,7 @@ export class AudioElementVM extends InteractiveVM {
 export class AudioElementSelectionVM extends InteractiveVM {
   private readonly _positionInteractivity: PositionInteractivityVM | undefined;
   private readonly _prominenceInteractivity:
-    | ProminenceInteractivityVM
-    | undefined;
+    ProminenceInteractivityVM | undefined;
   readonly audioElements: AudioElementVM[] = [];
   constructor(
     public readonly model: AudioElementSelectionM,
