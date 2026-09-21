@@ -84,9 +84,7 @@ import { NavigationController } from "../../../../lib";
 import { UiComponentFocusable } from "../lib/UiComponentFocusable";
 
 type NavigationTarget =
-  | UiComponentFocusable
-  | (() => UiComponentFocusable)
-  | undefined;
+  UiComponentFocusable | (() => UiComponentFocusable) | undefined;
 
 export class ExtendedNavController implements NavigationController {
   // keep track of a graph with references to the elements
