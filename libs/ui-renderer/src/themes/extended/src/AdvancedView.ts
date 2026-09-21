@@ -91,7 +91,6 @@ import { ButtonView } from "../lib/ButtonView";
 import { SliderView } from "./SliderView";
 import { AdvancedSelectionView } from "./AdvancedSelectionView";
 import { AdvancedNavBarView } from "./AdvancedNavBarView";
-import { Localizable } from "@wmt/mpeg-h-browser-ui-core";
 
 export class AdvancedView extends PopupView {
   viewModel: AudioSceneVM;
@@ -106,7 +105,6 @@ export class AdvancedView extends PopupView {
   elevationSlider: SliderView;
 
   navBar: AdvancedNavBarView;
-  resetButton: ButtonView;
 
   advancedSelectionView: AdvancedSelectionView;
   currentIndex = 0;
@@ -137,26 +135,7 @@ export class AdvancedView extends PopupView {
     this.interactivityContainer = document.createElement("div");
     this.interactivityContainer.classList.add("advanced_interactivity");
     this.element.append(this.interactivityContainer);
-    this.resetButton = new ButtonView(
-      this.element,
-      this.params,
-      () => {
-        this.viewModel.reset();
-        if (this.getResetFocusTarget() != null) {
-          this.hide();
-          return this.getResetFocusTarget();
-        }
-        return this.resetButton;
-      },
-      (this.params.get("customLabels") as Record<string, Localizable[]>)[
-        "reset"
-      ],
-      undefined,
-      "action",
-    );
-    this.resetButton.element.classList.add("reset_button");
     this.registerComponentFirstLayer(this.navBar);
-    this.registerComponentFirstLayer(this.resetButton);
   }
 
   setViewModel(vm: AudioSceneVM) {
@@ -178,7 +157,6 @@ export class AdvancedView extends PopupView {
     this.navBar.setViewModel(this.currentAeOrAes);
     this.fillPage();
     this.navBar.setEnabled(aes.length > 1);
-    this.resetButton.labelView.update();
     this.updateMaxHeight(aes);
   }
 
@@ -432,7 +410,7 @@ export class AdvancedView extends PopupView {
         return focusableElement;
       }
     }
-    return this.resetButton;
+    return this.navBar;
   }
 
   dispose(full: boolean = false) {
@@ -440,11 +418,9 @@ export class AdvancedView extends PopupView {
     // clear generic ui items from navigation graph
     if (full) {
       this.unregisterComponentFirstLayer(this.navBar);
-      this.unregisterComponentFirstLayer(this.resetButton);
     }
     if (full) {
       this.navBar.dispose();
-      this.resetButton.dispose();
       super.dispose();
     }
   }

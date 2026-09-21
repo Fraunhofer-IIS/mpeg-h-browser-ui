@@ -85,7 +85,7 @@ import { NavigationController } from "../../../lib";
 export class BasicNavController implements NavigationController {
   // keep track of a graph with references to the elements
   // call focus and unfocus on the elements
-  readonly supportedActions = ["left", "right", "up", "down"];
+  readonly supportedActions = ["left", "right", "up", "down", "select"];
 
   constructor() {}
 
@@ -227,6 +227,11 @@ export class BasicNavController implements NavigationController {
         }
       }
       return true;
+    } else if (action === "select") {
+      if (basicFocused[0]?.type === "button") {
+        basicFocused[0]?.click();
+        return true;
+      }
     }
     return false;
   }

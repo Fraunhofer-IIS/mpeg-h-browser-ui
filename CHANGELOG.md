@@ -1,5 +1,20 @@
 # Changelog
 
+## [r2.3.0] - 2026-09-21
+
+### Added
+
+- Basic theme: added reset button
+
+### Changed
+
+- Extended theme: moved reset button to menu bar
+
+### Fixed
+
+- Fixed parsing XML switch groups with disabled switching but enabled prominence or position interactivity
+- UI fixes in the extended theme (advanced menu, text wrapping of long words)
+
 ## [r2.2.0] - 2026-08-13
 
 ### Added

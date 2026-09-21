@@ -93,6 +93,7 @@ import { ButtonView } from "../lib/ButtonView";
 import { ExtendedNavController } from "./ExtendedNavController";
 
 import AdvancedSvg from "../assets/advanced.svg";
+import resetArrow from "../assets/reset.svg";
 
 export class MenuBarView extends UiComponent {
   viewModel: AudioSceneVM;
@@ -123,9 +124,12 @@ export class MenuBarView extends UiComponent {
     this.labels = [];
     this.buttons = [];
 
-    for (let i = 0; i < 4; i++) {
+    for (let i = 0; i < 5; i++) {
       this.containers[i] = document.createElement("li");
     }
+
+    this.containers[3].classList.add("advanced-menu-item");
+    this.containers[4].classList.add("reset-menu-item");
 
     this.labels.push(
       new LabelView(
@@ -221,7 +225,38 @@ export class MenuBarView extends UiComponent {
         "action",
       ),
     );
-    this.buttons[this.buttons.length - 1].element.classList.add("advanced");
+
+    // reset button
+    this.labels.push(
+      new LabelView(
+        this.containers[4],
+        this.params,
+        "h2",
+        (this.params.get("customLabels") as Record<string, Localizable[]>)[
+          "reset"
+        ],
+      ),
+    );
+
+    const buttonAction = new ButtonView(
+      this.containers[4],
+      this.params,
+      this.selectAction,
+      (this.params.get("customLabels") as Record<string, Localizable[]>)[
+        "reset"
+      ],
+      resetArrow,
+      "action",
+    );
+    buttonAction.setAction((__btn: ButtonView) => {
+      this.viewModel?.reset();
+    });
+
+    this.buttons.push(buttonAction);
+
+    this.buttons[this.buttons.length - 2].element.classList.add("advanced");
+    this.buttons[this.buttons.length - 1].element.classList.add("reset");
+
     this.buttons[3].setEnabled(false);
     for (const l of this.labels) {
       l.element.classList.add("capitalize");

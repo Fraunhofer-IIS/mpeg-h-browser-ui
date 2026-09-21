@@ -381,6 +381,10 @@ export class ExtendedView implements View {
       return undefined;
     }
     const index = this.menuBar.buttons.indexOf(b);
+    if (index === 4) {
+      this.viewModel?.reset();
+      return b;
+    }
     let newTarget: UiComponentFocusable = undefined;
     for (let i = 0; i < this.subViews.length; i++) {
       if (index !== i) {

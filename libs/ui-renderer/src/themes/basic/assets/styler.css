@@ -209,3 +209,47 @@ amm-info@iis.fraunhofer.de
 #nga-ui-basic *:focus-visible {
   outline: none;
 }
+
+#nga-ui-basic .presets .reset {
+  display: flex;
+  align-items: center;
+  margin-left: auto;
+  font-weight: 400;
+}
+
+#nga-ui-basic .button {
+  -webkit-appearance: none;
+  appearance: none;
+  box-sizing: border-box;
+
+  margin: 0;
+  padding: 0.75em;
+
+  border: solid 2px grey;
+  border-radius: 0.5em;
+  background-color: transparent;
+
+  color: white;
+  font-size: 1em;
+  line-height: normal;
+  text-align: left;
+
+  cursor: pointer;
+}
+
+#nga-ui-basic input.button.basic-focused {
+  border-color: white !important;
+  outline: 3px solid white !important;
+  outline-offset: 0;
+}
+
+.reset {
+  display: flex;
+  justify-content: right;
+  margin-bottom: 0.5em;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+}

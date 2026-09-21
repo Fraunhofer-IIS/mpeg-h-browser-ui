@@ -183,9 +183,9 @@ export class SliderView extends UiComponentFocusable {
     this.ac.abort();
     this.ac = new AbortController();
 
-    if (!(
-      vm instanceof AudioElementSelectionVM || vm instanceof AudioElementVM
-    )) {
+    if (
+      !(vm instanceof AudioElementSelectionVM || vm instanceof AudioElementVM)
+    ) {
       // viewModel not properly set
       return false;
     }

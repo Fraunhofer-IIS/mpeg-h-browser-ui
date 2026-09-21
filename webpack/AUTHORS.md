@@ -3,6 +3,7 @@
 - [Bernd Czelhan](https://github.com/bczelhan-iis), Fraunhofer IIS
 - [Moritz Fuchs](https://github.com/mfuchs-iis), Fraunhofer IIS
 - Jochen Issing, Fraunhofer IIS
+- Jule Loos, Fraunhofer IIS
 - Oliver Major, Fraunhofer IIS
 - Partha Pratim Nandi, Fraunhofer IIS
 - Dennis Salzner, Fraunhofer IIS

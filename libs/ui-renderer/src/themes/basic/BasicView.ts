@@ -104,6 +104,7 @@ export class BasicView implements View {
   params = new Map<string, unknown>();
   viewModel: AudioSceneVM;
   basicViewElement: HTMLDivElement;
+  resetDiv: HTMLDivElement;
   presetsDiv: HTMLDivElement;
   elementsDiv: HTMLDivElement;
   selectionsDiv: HTMLDivElement;
@@ -163,11 +164,13 @@ export class BasicView implements View {
 
   /**
    * Update the UI if another preselection is selected.
-   * @param preselection new selected preselection
    */
   updateUIPreselectionChanged(): void {
     this.acPreselChange.abort();
     this.acPreselChange = new AbortController();
+    this.resetDiv
+      .getElementsByClassName("button")[0]
+      .classList.remove("basic-focused");
     this.basicViewElement.removeChild(this.elementsDiv);
     this.generateUIAudioElements();
     this.basicViewElement.appendChild(this.elementsDiv);
@@ -179,11 +182,12 @@ export class BasicView implements View {
 
   /**
    * Generate the preselections section of the UI.
-   * @param audioScene current audio scene
    */
   generateUIPreselectionList(): void {
     this.presetsDiv = document.createElement("div");
     this.presetsDiv.className = "presets";
+    const header = document.createElement("div");
+    header.className = "header";
     const presetsLabel = document.createElement("div");
     presetsLabel.className = "headerlabel";
     const preselectionLocalizable = getPreferredLocalizable(
@@ -196,7 +200,11 @@ export class BasicView implements View {
       preselectionLocalizable.value,
     );
     presetsLabel.lang = preselectionLocalizable.lang;
-    this.presetsDiv.appendChild(presetsLabel);
+    header.appendChild(presetsLabel);
+    this.presetsDiv.appendChild(header);
+
+    header.appendChild(this.generateUIReset()); //reset-button
+
     const presetsInteractivityDiv = document.createElement("div");
     presetsInteractivityDiv.classList.add("interactivityitem");
     this.presetsDiv.appendChild(presetsInteractivityDiv);
@@ -209,7 +217,6 @@ export class BasicView implements View {
 
   /**
    * Generate one preselection radio button.
-   * @param scene current audio scene
    * @param preselection current preselection
    * @returns <span> containing the button
    */
@@ -569,6 +576,42 @@ export class BasicView implements View {
       }
     }
     this.params.set("customLabels", currentLabels);
+  }
+
+  generateUIReset(): HTMLDivElement {
+    this.resetDiv = document.createElement("div");
+    this.resetDiv.className = "reset";
+
+    const resetLocalizable = getPreferredLocalizable(
+      (this.params.get("customLabels") as Record<string, Localizable[]>)[
+        "reset"
+      ],
+      this.params.get("preferredLabelLanguages") as string[],
+    );
+
+    const spanButton = document.createElement("span");
+    const labelButton = document.createElement("label");
+    labelButton.className = capitalizeFirstLetter(resetLocalizable.value);
+    labelButton.lang = resetLocalizable.lang;
+    const btn = document.createElement("input");
+    btn.type = "button";
+    btn.name = "reset";
+
+    btn.value = capitalizeFirstLetter(resetLocalizable.value);
+    btn.lang = resetLocalizable.lang;
+    btn.addEventListener("click", () => {
+      this.viewModel.reset();
+      this.initUI();
+    });
+    btn.classList.add("button");
+    btn.classList.add("interactivityitem");
+    btn.tabIndex = 0;
+
+    labelButton.appendChild(btn);
+    spanButton.appendChild(labelButton);
+    this.resetDiv.appendChild(spanButton);
+
+    return this.resetDiv;
   }
 
   /**

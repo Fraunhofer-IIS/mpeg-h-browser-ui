@@ -278,6 +278,8 @@ BUTTONS
   justify-content: space-between;
   align-items: center;
   line-break: normal;
+  overflow-wrap: anywhere;
+  hyphens: auto;
   border: none;
   margin: var(--nga-ui-extended-element-margin);
   scroll-margin-bottom: var(--nga-ui-extended-element-margin);
@@ -378,7 +380,8 @@ MENU BAR SETTINGS
   margin-bottom: var(--nga-ui-extended-element-margin);
 }
 
-.nga-ui-extended .menubar > li > button.advanced {
+.nga-ui-extended .menubar > li > button.advanced,
+.nga-ui-extended .menubar > li > button.reset {
   min-width: 0;
   height: calc(
     var(--nga-ui-extended-element-height) +
@@ -393,18 +396,28 @@ MENU BAR SETTINGS
   justify-content: center;
 }
 
-.nga-ui-extended .menubar *:has(button.advanced) {
-  margin-left: auto;
+.nga-ui-extended .menubar > li.advanced-menu-item,
+.nga-ui-extended .menubar > li.reset-menu-item {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
   justify-content: flex-end;
 }
 
-.nga-ui-extended .menubar *:has(button.advanced) > h2 {
+.nga-ui-extended .menubar > li.advanced-menu-item {
+  margin-left: auto;
+}
+
+.nga-ui-extended .menubar > li.advanced-menu-item > h2,
+.nga-ui-extended .menubar > li.reset-menu-item > h2 {
   display: none;
 }
 
+.nga-ui-extended .menubar > li.advanced-menu-item img,
+.nga-ui-extended .menubar > li.reset-menu-item img {
+  height: 1.2em;
+  width: 1.2em;
+}
 /*
 ###########################
 POPUPS
@@ -429,6 +442,13 @@ POPUPS
   overscroll-behavior: none;
 }
 
+.nga-ui-extended .popup.advanced_menu {
+  border-radius: calc(
+    var(--nga-ui-extended-border-radius) + 2 *
+      var(--nga-ui-extended-element-margin)
+  );
+}
+
 .nga-ui-extended .submenu_l1 {
   transform: translateY(calc(-100% - var(--nga-ui-extended-element-margin)))
     translateX(calc(0px - var(--nga-ui-extended-element-margin)));
@@ -436,30 +456,44 @@ POPUPS
 
 .nga-ui-extended .submenu_l1.advanced_menu {
   transform: translateY(calc(-100% - var(--nga-ui-extended-element-margin)))
-    translateX(calc(0px + var(--nga-ui-extended-element-margin)));
+    translateX(
+      calc(
+        2 * var(--nga-ui-extended-element-margin) +
+          var(--nga-ui-extended-element-height) + 2 *
+          var(--nga-ui-extended-element-padding-vertical)
+      )
+    );
   width: 20em;
   --nga-ui-extended-advanced-max-btns: 0;
   --nga-ui-extended-advanced-max-sliders: 1;
-  --nga-ui-extended-advanced-interactivity-height: calc(
-    (
-        1 + var(--nga-ui-extended-advanced-max-btns) + 1.5 *
-          var(--nga-ui-extended-advanced-max-sliders)
-      ) *
-      var(--nga-ui-extended-element-margin) +
-      (
-        2 * var(--nga-ui-extended-advanced-max-btns) + 2 *
-          var(--nga-ui-extended-advanced-max-sliders)
-      ) *
-      var(--nga-ui-extended-element-padding-vertical) +
-      (
-        1 * var(--nga-ui-extended-advanced-max-btns) + 2 *
-          var(--nga-ui-extended-advanced-max-sliders)
-      ) *
+  --nga-ui-extended-advanced-min-interactivity-height: calc(
+    3 * var(--nga-ui-extended-element-margin) + 4 *
+      var(--nga-ui-extended-element-padding-vertical) + 2 *
       var(--nga-ui-extended-element-height)
   );
+  --nga-ui-extended-advanced-interactivity-height: max(
+    var(--nga-ui-extended-advanced-min-interactivity-height),
+    calc(
+      (
+          1 + var(--nga-ui-extended-advanced-max-btns) + 1.5 *
+            var(--nga-ui-extended-advanced-max-sliders)
+        ) *
+        var(--nga-ui-extended-element-margin) +
+        (
+          2 * var(--nga-ui-extended-advanced-max-btns) + 2 *
+            var(--nga-ui-extended-advanced-max-sliders)
+        ) *
+        var(--nga-ui-extended-element-padding-vertical) +
+        (
+          1 * var(--nga-ui-extended-advanced-max-btns) + 2 *
+            var(--nga-ui-extended-advanced-max-sliders)
+        ) *
+        var(--nga-ui-extended-element-height)
+    )
+  );
   --nga-ui-extended-advanced-rest-height: calc(
-    4 * var(--nga-ui-extended-element-margin) + 4 *
-      var(--nga-ui-extended-element-padding-vertical) + 2 *
+    3 * var(--nga-ui-extended-element-margin) + 2 *
+      var(--nga-ui-extended-element-padding-vertical) + 1 *
       var(--nga-ui-extended-element-height)
   );
   --nga-ui-extended-advanced-total-height: calc(
@@ -632,11 +666,15 @@ ADVANCED MENU
   align-items: center;
   align-content: center;
   justify-content: center;
-  border-radius: var(--nga-ui-extended-border-radius);
+  border-radius: calc(
+    var(--nga-ui-extended-element-margin) + var(--nga-ui-extended-border-radius)
+  );
   height: calc(
     2 * var(--nga-ui-extended-element-padding-vertical) +
       var(--nga-ui-extended-element-height)
   );
+  overflow-wrap: anywhere;
+  hyphens: auto;
 }
 
 .nga-ui-extended .advanced_menu .navbar button.navbtn::after {
@@ -687,7 +725,6 @@ ADVANCED MENU
   border-radius: calc(
     var(--nga-ui-extended-border-radius) + var(--nga-ui-extended-element-margin)
   );
-  margin-bottom: var(--nga-ui-extended-element-margin);
 }
 
 .nga-ui-extended .advanced_menu .advanced_interactivity button {

@@ -291,11 +291,6 @@ export class XmlSceneParser {
     const metadata = this.parseAudioElementMetadata(xmlNode);
     const properties = this.parseAudioProperties(xmlNode);
 
-    if (!isActionAllowed) {
-      properties.positionInteractivity = null;
-      properties.prominenceInteractivity = null;
-    }
-
     return new AudioElementSelectionM(
       new AudioElementsM(audioObjects),
       defaultAudioObject,
