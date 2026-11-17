@@ -109,7 +109,7 @@ export class XmlSceneRepository extends EventTarget implements SceneRepository {
   private currentResolve: ((value: unknown) => void) | null = null;
 
   private static readonly systemSettingTypes = [
-    0, 10, 11, 12, 20, 21, 31, 70, 71, 100,
+    10, 11, 12, 20, 21, 31, 70, 71, 100,
   ];
 
   constructor(

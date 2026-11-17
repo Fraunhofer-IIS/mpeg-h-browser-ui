@@ -104,7 +104,8 @@ export abstract class PopupView extends UiComponent {
   init() {
     this.element = document.createElement("div");
     this.element.classList.add("popup");
-    this.hide();
+    this.element.classList.add("hidden");
+    this._shown = false;
     super.init();
   }
 
@@ -268,11 +269,21 @@ export abstract class PopupView extends UiComponent {
   show() {
     this.element.classList.add("shown");
     this.element.classList.remove("hidden");
+    const anim = this.params.get("useAnimations");
+    if (anim) {
+      this.element.classList.remove("animate-out");
+    }
     this._shown = true;
   }
 
   hide() {
     this.element.classList.add("hidden");
+    const anim = this.params.get("useAnimations");
+    if (this.element.classList.contains("shown")) {
+      if (anim) {
+        this.element.classList.add("animate-out");
+      }
+    }
     this.element.classList.remove("shown");
     this._shown = false;
 

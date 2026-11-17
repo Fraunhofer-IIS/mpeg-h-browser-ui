@@ -82,7 +82,6 @@ amm-info@iis.fraunhofer.de
 
 let repo, viewManager, navController;
 let initViewManagerPromise = null;
-let initialized = false;
 
 const mpeghUiRoot = document.querySelector("#mpegh-ui");
 
@@ -103,28 +102,32 @@ function performKeyAction(action) {
   }
 }
 
+function ensureInitialized() {
+  if (!initViewManagerPromise) {
+    initViewManagerPromise = initViewManager();
+  }
+  return initViewManagerPromise;
+}
 /**
  * Initialize the view manager, that handles the audio scene and the UI as a coordinator
  */
 async function initViewManager() {
-  if (initialized == false) {
-    repo = new IIS_WMT.XmlSceneRepository(
-      () => viewManager.model,
-      (newModel) => {
-        viewManager.model = newModel;
-      },
-    ); // create XML scene repository
-    repo.setOnAction(onUiAction); // set action with callback to onUIAction
-    // try to read customLabels json file & set custom labels
-    const customLabelsPromise = fetch("customLabels.json").then((res) =>
-      res.json(),
-    );
-    customLabels = await customLabelsPromise;
-    viewManager = new IIS_WMT.ViewManager(repo, mpeghUiRoot); // create new viewmanager
-    viewManager.updateViewParam("updateCustomLabels", customLabels);
-    navController = viewManager.getNavigationController(); // get nav controller
-    initialized = true;
-  }
+  repo = new IIS_WMT.XmlSceneRepository(
+    () => viewManager.model,
+    (newModel) => {
+      viewManager.model = newModel;
+    },
+  ); // create XML scene repository
+  repo.setOnAction(onUiAction); // set action with callback to onUIAction
+  // try to read customLabels json file & set custom labels
+  const customLabelsPromise = fetch("customLabels.json").then((res) =>
+    res.json(),
+  );
+  customLabels = await customLabelsPromise;
+  viewManager = new IIS_WMT.ViewManager(repo, mpeghUiRoot); // create new viewmanager
+  viewManager.updateViewParam("updateCustomLabels", customLabels);
+  viewManager.updateViewParam("useAnimations", true); // animations enabled by default
+  navController = viewManager.getNavigationController(); // get nav controller
 }
 
 /**
@@ -132,10 +135,7 @@ async function initViewManager() {
  * @param {string | ArrayBuffer} asi audio scene to be loaded.
  */
 async function loadAudioScene(asi) {
-  if (!initViewManagerPromise) {
-    initViewManagerPromise = initViewManager();
-  }
-  await initViewManagerPromise;
+  await ensureInitialized();
   repo.loadFromPayload(asi); // parse and render audio scene given from decoder
 }
 
@@ -144,12 +144,18 @@ async function loadAudioScene(asi) {
  * @param {string[]} languages an array of language tags. First entry = most important. Supports any combination of BCP47, ISO-639-1 or ISO639-2 tags.
  */
 async function setPreferredLabelLanguages(languages) {
-  if (!initViewManagerPromise) {
-    initViewManagerPromise = initViewManager();
-  }
-  await initViewManagerPromise;
+  await ensureInitialized();
   converted = IIS_WMT.toBCP47Array(languages);
   // remove duplicates
   converted = [...new Set(converted)];
   viewManager.updateViewParam("preferredLabelLanguages", converted);
+}
+
+/**
+ * Toggle whether to use animations. Should be called before loading the Audio Scene.
+ * @param {boolean} animationsEnabled whether animations should be enabled in the current UI theme (if supported)
+ */
+async function toggleAnimations(animationsEnabled) {
+  await ensureInitialized();
+  viewManager.updateViewParam("useAnimations", animationsEnabled);
 }

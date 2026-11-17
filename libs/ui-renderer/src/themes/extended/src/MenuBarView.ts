@@ -124,12 +124,19 @@ export class MenuBarView extends UiComponent {
     this.labels = [];
     this.buttons = [];
 
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < 4; i++) {
       this.containers[i] = document.createElement("li");
     }
 
-    this.containers[3].classList.add("advanced-menu-item");
-    this.containers[4].classList.add("reset-menu-item");
+    this.containers[3].classList.add("menu-action-group");
+
+    const advancedDiv = document.createElement("div");
+    advancedDiv.classList.add("advanced-menu-item");
+
+    const resetDiv = document.createElement("div");
+    resetDiv.classList.add("reset-menu-item");
+
+    this.containers[3].append(advancedDiv, resetDiv);
 
     this.labels.push(
       new LabelView(
@@ -205,7 +212,7 @@ export class MenuBarView extends UiComponent {
 
     this.labels.push(
       new LabelView(
-        this.containers[3],
+        advancedDiv,
         this.params,
         "h2",
         (this.params.get("customLabels") as Record<string, Localizable[]>)[
@@ -215,7 +222,7 @@ export class MenuBarView extends UiComponent {
     );
     this.buttons.push(
       new ButtonView(
-        this.containers[3],
+        advancedDiv,
         this.params,
         this.selectAction,
         (this.params.get("customLabels") as Record<string, Localizable[]>)[
@@ -229,7 +236,7 @@ export class MenuBarView extends UiComponent {
     // reset button
     this.labels.push(
       new LabelView(
-        this.containers[4],
+        resetDiv,
         this.params,
         "h2",
         (this.params.get("customLabels") as Record<string, Localizable[]>)[
@@ -238,29 +245,27 @@ export class MenuBarView extends UiComponent {
       ),
     );
 
-    const buttonAction = new ButtonView(
-      this.containers[4],
-      this.params,
-      this.selectAction,
-      (this.params.get("customLabels") as Record<string, Localizable[]>)[
-        "reset"
-      ],
-      resetArrow,
-      "action",
+    this.buttons.push(
+      new ButtonView(
+        resetDiv,
+        this.params,
+        this.selectAction,
+        (this.params.get("customLabels") as Record<string, Localizable[]>)[
+          "reset"
+        ],
+        resetArrow,
+        "action",
+      ),
     );
-    buttonAction.setAction((__btn: ButtonView) => {
-      this.viewModel?.reset();
-    });
 
-    this.buttons.push(buttonAction);
-
-    this.buttons[this.buttons.length - 2].element.classList.add("advanced");
-    this.buttons[this.buttons.length - 1].element.classList.add("reset");
+    this.buttons[3].element.classList.add("advanced");
+    this.buttons[4].element.classList.add("reset");
 
     this.buttons[3].setEnabled(false);
     for (const l of this.labels) {
       l.element.classList.add("capitalize");
     }
+
     for (const c of this.containers) {
       this.element.append(c);
     }

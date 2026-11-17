@@ -101,7 +101,7 @@ export abstract class UiComponentFocusable extends UiComponent {
    * @param i focus requester id. 0 = main requester
    */
   focus(i: number) {
-    if (this.focusable) {
+    if (this.focusable && !this.focusedBy.has(i)) {
       this.element.focus();
       this.element.scrollIntoView({ behavior: "smooth", block: "nearest" });
       this.focusedBy.add(i);
@@ -118,14 +118,16 @@ export abstract class UiComponentFocusable extends UiComponent {
    * @param i blur requester id. 0 = main requester
    */
   blur(i: number) {
-    this.focusedBy.delete(i);
-    if (this.focusedBy.size === 0) {
-      this.element.blur();
-    }
-    this.element.classList.remove("focused_navctrl_" + i);
-    // make not focusable by tab
-    if (i === 0) {
-      this.element.tabIndex = -1;
+    if (this.focusedBy.has(i)) {
+      this.focusedBy.delete(i);
+      if (this.focusedBy.size === 0) {
+        this.element.blur();
+      }
+      this.element.classList.remove("focused_navctrl_" + i);
+      // make not focusable by tab
+      if (i === 0) {
+        this.element.tabIndex = -1;
+      }
     }
   }
 }

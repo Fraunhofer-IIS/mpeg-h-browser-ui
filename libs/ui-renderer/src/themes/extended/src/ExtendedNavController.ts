@@ -229,9 +229,11 @@ export class ExtendedNavController implements NavigationController {
     }
 
     // move focus to new target
-    this._currentFocus.blur(0);
-    target.focus(0);
-    this._currentFocus = target;
+    if (this._currentFocus !== target) {
+      this._currentFocus.blur(0);
+      target.focus(0);
+      this._currentFocus = target;
+    }
     return true;
   }
 

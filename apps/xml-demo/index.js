@@ -179,8 +179,10 @@ async function main() {
   viewManager.updateViewParam("preferredLabelLanguages", browserLangs);
 
   // set custom labels
-
   viewManager.updateViewParam("updateCustomLabels", customLabels);
+
+  // enable animations by default
+  viewManager.updateViewParam("useAnimations", true);
 
   // parse and render audio scene given from decoder, here only dummy from xml
   repo.loadFromPayload(await asiPromise);

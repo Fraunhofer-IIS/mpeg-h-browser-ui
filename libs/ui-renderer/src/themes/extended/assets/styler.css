@@ -105,6 +105,9 @@ amm-info@iis.fraunhofer.de
   --nga-ui-extended-element-margin: 0.75em;
   --nga-ui-extended-element-inner-margin-ratio: 0.5;
   --nga-ui-extended-border-radius: 0.5em;
+  --nga-ui-extended-heading-padding: calc(
+    var(--nga-ui-extended-border-radius) * 0.618
+  );
   --nga-ui-extended-overlay-z-index: 51;
 
   /* slider */
@@ -112,6 +115,8 @@ amm-info@iis.fraunhofer.de
   --nga-ui-extended-slider-thumb-size: 1.5em;
   --nga-ui-extended-slider-bar-height: 0.4em;
   --nga-ui-extended-slider-width: 16em;
+
+  --nga-ui-extended-animation-scale: 1;
 }
 
 /*
@@ -146,7 +151,7 @@ GLOBAL SETTINGS
 }
 
 .nga-ui-extended .hidden {
-  display: none !important;
+  display: none;
 }
 
 .nga-ui-extended .capitalize p::first-letter,
@@ -345,6 +350,7 @@ MENU BAR SETTINGS
   position: relative;
   margin: 0;
   display: flex;
+  flex-wrap: wrap;
   box-sizing: border-box;
   padding: var(--nga-ui-extended-element-margin);
   gap: var(--nga-ui-extended-element-margin);
@@ -361,28 +367,65 @@ MENU BAR SETTINGS
 }
 
 .nga-ui-extended .menubar > li > h2 {
-  box-sizing: border-box;
-  min-width: calc(8em + 2 * var(--nga-ui-extended-element-padding-horizontal));
-  width: calc(25vw - 2 * var(--nga-ui-extended-element-margin));
+  position: relative;
+  box-sizing: content-box;
+  min-width: calc(
+    8em + 2 * var(--nga-ui-extended-element-padding-horizontal) - 2 *
+      var(--nga-ui-extended-heading-padding)
+  );
+  width: calc(
+    25vw - 2 * var(--nga-ui-extended-element-margin) - 2 *
+      var(--nga-ui-extended-heading-padding)
+  );
   max-width: calc(
     var(--nga-ui-extended-element-width) + 2 *
-      var(--nga-ui-extended-element-padding-horizontal)
+      var(--nga-ui-extended-element-padding-horizontal) - 2 *
+      var(--nga-ui-extended-heading-padding)
   );
   text-align: left;
   color: var(--nga-ui-extended-secondary-color);
   margin-top: 0;
-  padding-left: calc(var(--nga-ui-extended-border-radius) * 0.618);
-  padding-right: calc(var(--nga-ui-extended-border-radius) * 0.618);
+  padding-left: var(--nga-ui-extended-heading-padding);
+  padding-right: var(--nga-ui-extended-heading-padding);
   color: var(--nga-ui-extended-secondary-color);
   height: var(--nga-ui-extended-element-height);
   font-size: var(--nga-ui-extended-font-size);
   font-weight: 700;
-  margin-bottom: var(--nga-ui-extended-element-margin);
+  margin-bottom: 0;
+  padding-bottom: var(--nga-ui-extended-element-margin);
+
+  -webkit-mask-image: linear-gradient(
+    to right,
+    #000 calc(100% - min(5px, var(--nga-ui-extended-heading-padding))),
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to right,
+    #000 calc(100% - min(5px, var(--nga-ui-extended-heading-padding))),
+    transparent 100%
+  );
 }
 
-.nga-ui-extended .menubar > li > button.advanced,
-.nga-ui-extended .menubar > li > button.reset {
-  min-width: 0;
+.nga-ui-extended .menubar > li.menu-action-group {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-end;
+  justify-content: flex-end;
+  gap: var(--nga-ui-extended-element-margin);
+  margin-left: auto;
+}
+
+.nga-ui-extended .menubar > li.menu-action-group .advanced-menu-item,
+.nga-ui-extended .menubar > li.menu-action-group .reset-menu-item {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.nga-ui-extended .menubar > li.menu-action-group .advanced-menu-item button,
+.nga-ui-extended .menubar > li.menu-action-group .reset-menu-item button {
+  min-width: unset;
   height: calc(
     var(--nga-ui-extended-element-height) +
       var(--nga-ui-extended-element-padding-vertical)
@@ -394,30 +437,23 @@ MENU BAR SETTINGS
   padding: calc(0.5 * var(--nga-ui-extended-element-padding-vertical));
   align-self: flex-end;
   justify-content: center;
-}
-
-.nga-ui-extended .menubar > li.advanced-menu-item,
-.nga-ui-extended .menubar > li.reset-menu-item {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  justify-content: flex-end;
+  margin: 0;
 }
 
 .nga-ui-extended .menubar > li.advanced-menu-item {
   margin-left: auto;
 }
 
-.nga-ui-extended .menubar > li.advanced-menu-item > h2,
-.nga-ui-extended .menubar > li.reset-menu-item > h2 {
+.nga-ui-extended .menubar > li.menu-action-group .advanced-menu-item h2,
+.nga-ui-extended .menubar > li.menu-action-group .reset-menu-item h2 {
   display: none;
 }
 
-.nga-ui-extended .menubar > li.advanced-menu-item img,
-.nga-ui-extended .menubar > li.reset-menu-item img {
+.nga-ui-extended .menubar > li.menu.action-group button img {
   height: 1.2em;
   width: 1.2em;
 }
+
 /*
 ###########################
 POPUPS
@@ -455,15 +491,15 @@ POPUPS
 }
 
 .nga-ui-extended .submenu_l1.advanced_menu {
-  transform: translateY(calc(-100% - var(--nga-ui-extended-element-margin)))
-    translateX(
-      calc(
-        2 * var(--nga-ui-extended-element-margin) +
-          var(--nga-ui-extended-element-height) + 2 *
-          var(--nga-ui-extended-element-padding-vertical)
-      )
-    );
-  width: 20em;
+  --nga-ui-extended-advanced-menu-min-width: calc(
+    8em + 4 * var(--nga-ui-extended-element-margin) + 2 *
+      var(--nga-ui-extended-element-padding-horizontal)
+  );
+  transform: translateY(calc(-100% - var(--nga-ui-extended-element-margin)));
+  position: absolute;
+  right: 0;
+  width: calc(min(20em, 50%));
+  min-width: var(--nga-ui-extended-advanced-menu-min-width);
   --nga-ui-extended-advanced-max-btns: 0;
   --nga-ui-extended-advanced-max-sliders: 1;
   --nga-ui-extended-advanced-min-interactivity-height: calc(
@@ -675,6 +711,7 @@ ADVANCED MENU
   );
   overflow-wrap: anywhere;
   hyphens: auto;
+  text-align: center;
 }
 
 .nga-ui-extended .advanced_menu .navbar button.navbtn::after {
@@ -696,6 +733,11 @@ ADVANCED MENU
 
 .nga-ui-extended .advanced_menu .navbar button.navbtn.right {
   text-align: right;
+  margin-left: 0;
+}
+
+.nga-ui-extended .advanced_menu .navbar button.navbtn.left {
+  margin-right: 0;
 }
 
 .nga-ui-extended .advanced_menu .navbar button.navbtn {
@@ -749,4 +791,139 @@ ADVANCED MENU
   max-width: unset;
   margin: 0;
   justify-content: center;
+}
+
+/*
+###########################
+keyframes aniamtion
+###########################
+*/
+@keyframes rotateReset {
+  100% {
+    transform: rotate(180deg);
+  }
+}
+
+@keyframes slideUp {
+  0% {
+    top: 1em;
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    top: 0;
+  }
+}
+
+@keyframes slideDown {
+  0% {
+    top: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    top: 1em;
+    opacity: 0;
+  }
+}
+
+@keyframes slideLeft {
+  0% {
+    right: calc(100% + var(--nga-ui-extended-element-margin) - 1em);
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    right: calc(100% + var(--nga-ui-extended-element-margin));
+  }
+}
+
+@keyframes slideRight {
+  0% {
+    right: calc(100% + var(--nga-ui-extended-element-margin));
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    right: calc(100% + var(--nga-ui-extended-element-margin) - 1em);
+    opacity: 0;
+  }
+}
+
+@keyframes glass-in {
+  0% {
+    filter: blur(5px);
+  }
+  100% {
+    filter: blur(0px);
+  }
+}
+
+@keyframes glass-out {
+  0% {
+    filter: blur(0px);
+  }
+  100% {
+    filter: blur(5px);
+  }
+}
+
+/*
+###########################
+transitions/aniamtions
+###########################
+*/
+
+/* focus and nav controller with slide transition */
+.nga-ui-extended.animate .focused_navctrl_0 {
+  transition: box-shadow cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: calc(var(--nga-ui-extended-animation-scale) * 100ms);
+}
+
+/* slide in and out with glass and fade effect */
+.nga-ui-extended.animate .popup {
+  animation-name: slideUp, glass-in;
+  animation-duration: calc(var(--nga-ui-extended-animation-scale) * 100ms);
+  animation-timing-function: ease-out;
+  animation-fill-mode: forwards;
+}
+
+.nga-ui-extended.animate .popup.animate-out {
+  display: block;
+  pointer-events: none;
+  animation-name: slideDown, glass-out;
+  animation-duration: calc(var(--nga-ui-extended-animation-scale) * 100ms);
+  animation-timing-function: ease-in;
+  animation-fill-mode: forwards;
+}
+
+.nga-ui-extended.animate .advanced_menu .advanced_selection {
+  animation-name: slideLeft, glass-in;
+  animation-duration: calc(var(--nga-ui-extended-animation-scale) * 100ms);
+  animation-timing-function: ease-out;
+  animation-fill-mode: forwards;
+}
+
+.nga-ui-extended.animate .advanced_menu .hidden.animate-out.advanced_selection {
+  animation-name: slideRight, glass-out;
+  animation-duration: calc(var(--nga-ui-extended-animation-scale) * 100ms);
+  animation-timing-function: ease-in;
+  animation-fill-mode: forwards;
+}
+
+/* Rotate reset */
+.nga-ui-extended.animate
+  .menubar
+  > li.menu-action-group
+  .btn-action.reset.rotate
+  img {
+  animation-name: rotateReset;
+  animation-duration: calc(var(--nga-ui-extended-animation-scale) * 275ms);
+  animation-fill-mode: forwards;
 }

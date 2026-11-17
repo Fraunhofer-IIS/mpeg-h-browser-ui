@@ -186,7 +186,7 @@ export class ButtonView extends UiComponentFocusable {
    * @param i focus requester id. 0 = main requester
    */
   focus(i: number) {
-    if (this.focusable) {
+    if (this.focusable && !this.focusedBy.has(i)) {
       this.element.focus();
       this.element.scrollIntoView({ behavior: "smooth", block: "nearest" });
       this.focusedBy.add(i);

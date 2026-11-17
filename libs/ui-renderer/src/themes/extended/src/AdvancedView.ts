@@ -358,7 +358,6 @@ export class AdvancedView extends PopupView {
         this.elevationSlider.toEnd();
       }
       this.elevationSlider.setViewModel(this.currentAeOrAes);
-      tmpPrevView = this.elevationSlider;
     } else if (this.elevationSlider != null) {
       this.unregisterComponentFirstLayer(this.elevationSlider);
       this.elevationSlider.dispose();

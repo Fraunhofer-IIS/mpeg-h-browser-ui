@@ -960,13 +960,11 @@ export class AudioSceneVM extends InteractiveVM {
   reset() {
     if (this.repository.supportedActions.includes("reset")) {
       this.repository.applyAction({ type: "reset" });
-    }
-    for (const presel of this._preselections) {
-      presel.reset();
-    }
-    this.model.selectPreselection(this.model.defaultPreselection);
-    if (this.repository.supportedActions.includes("reset")) {
-      this.repository.applyAction({ type: "reset" });
+    } else {
+      for (const presel of this._preselections) {
+        presel.reset();
+      }
+      this.model.selectPreselection(this.model.defaultPreselection);
     }
   }
 

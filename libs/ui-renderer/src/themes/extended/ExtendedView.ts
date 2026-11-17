@@ -166,6 +166,10 @@ export class ExtendedView implements View {
         ],
       ],
     ]);
+    // animations - default: off
+    this.params.set("useAnimations", false);
+    this.params.set("animationScale", 1);
+
     this.createSubViews();
     this.updateMaxHeight();
     this.addHeightListeners();
@@ -175,15 +179,27 @@ export class ExtendedView implements View {
    * Updates max total height variable based on height of the root element.
    * */
   updateMaxHeight() {
-    this.rootElement.style.setProperty(
+    this.container.style.setProperty(
       "--nga-ui-extended-max-total-height",
       `${this.rootElement.offsetHeight}px`,
+    );
+    if (!this.menuBar.element) return;
+    this.container.style.setProperty(
+      "--nga-ui-extended-menu-bar-height",
+      `${this.menuBar.element.offsetHeight}px`,
     );
   }
 
   addHeightListeners() {
     window.addEventListener("resize", this.updateMaxHeight.bind(this));
     window.addEventListener("load", this.updateMaxHeight.bind(this));
+    window.addEventListener("pageshow", this.updateMaxHeight.bind(this));
+  }
+
+  removeHeightListeners() {
+    window.removeEventListener("resize", this.updateMaxHeight.bind(this));
+    window.removeEventListener("load", this.updateMaxHeight.bind(this));
+    window.removeEventListener("pageshow", this.updateMaxHeight.bind(this));
   }
 
   /**
@@ -318,6 +334,8 @@ export class ExtendedView implements View {
   createSubViews(): void {
     this.container = document.createElement("div");
     this.container.classList.add("nga-ui-extended");
+    const anim = this.params.get("useAnimations");
+    this.container.classList.toggle("animate", Boolean(anim));
     this.subViews = [];
     this.menuBar = new MenuBarView(
       this.container,
@@ -383,6 +401,15 @@ export class ExtendedView implements View {
     const index = this.menuBar.buttons.indexOf(b);
     if (index === 4) {
       this.viewModel?.reset();
+      if (this.params.get("useAnimations")) {
+        const animationScale =
+          (this.params.get("animationScale") as number | undefined) ?? 1;
+        b.element.classList.add("rotate");
+        setTimeout(
+          () => b.element.classList.remove("rotate"),
+          animationScale * 275,
+        );
+      }
       return b;
     }
     let newTarget: UiComponentFocusable = undefined;
@@ -443,11 +470,32 @@ export class ExtendedView implements View {
    * @returns if the option exists and the value was set: true, else false
    */
   updateViewParam(param: string, value: unknown) {
-    if (param == "updateCustomLabels" && value instanceof Object) {
+    if (param === "updateCustomLabels" && value instanceof Object) {
       this.setCustomLabels(value, false);
     }
-    if (param == "overrideCustomLabels" && value instanceof Object) {
+    if (param === "overrideCustomLabels" && value instanceof Object) {
       this.setCustomLabels(value, true);
+    }
+    if (
+      param === "useAnimations" &&
+      typeof value === "boolean" &&
+      this.container
+    ) {
+      this.container.classList.toggle("animate", Boolean(value));
+    }
+    if (param === "animationScale") {
+      const animationScale = value ?? 1;
+      if (
+        typeof animationScale !== "number" ||
+        !Number.isFinite(animationScale) ||
+        animationScale < 0
+      ) {
+        return false;
+      }
+      this.container.style.setProperty(
+        "--nga-ui-extended-animation-scale",
+        String(animationScale),
+      );
     }
     if (this.params.has(param)) {
       this.params.set(param, value);
@@ -513,6 +561,7 @@ export class ExtendedView implements View {
    */
   dispose() {
     this.hide();
+    this.removeHeightListeners();
     this.ac.abort();
     this.ac2.abort();
     if (this.subViews) {

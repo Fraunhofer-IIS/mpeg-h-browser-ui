@@ -139,6 +139,9 @@ async function main() {
 
   // set custom labels
   viewManager.updateViewParam("updateCustomLabels", customLabels);
+
+  // set animation
+  viewManager.updateViewParam("useAnimations", true);
 }
 
 main();

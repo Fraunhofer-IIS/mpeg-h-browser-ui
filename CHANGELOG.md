@@ -1,5 +1,23 @@
 # Changelog
 
+## [r2.4.0] - 2026-11-17
+
+### Added
+
+- Extended theme: added optional animations
+
+### Changed
+
+- Extended & basic theme: improved responsiveness for smaller screens
+- Updated pnpm to 12.16.1
+- Updated dependencies
+
+### Fixed
+
+- Fixed XML reset handling
+
+# Changelog
+
 ## [r2.3.0] - 2026-09-21
 
 ### Added

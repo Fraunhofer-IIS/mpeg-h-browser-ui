@@ -102,10 +102,16 @@ amm-info@iis.fraunhofer.de
   text-align: left;
   margin-bottom: 10px;
   margin-top: 0em;
+  hyphens: auto;
+  margin-right: 1em;
 }
 
 #nga-ui-basic .presets .headerlabel {
   font-size: 140%;
+  min-width: 0;
+  flex: 1 1 0;
+  word-break: break-word;
+  white-space: normal;
 }
 
 #nga-ui-basic .interactivityitem {
@@ -122,8 +128,6 @@ amm-info@iis.fraunhofer.de
 }
 
 #nga-ui-basic .interactivitylabel {
-  min-width: 6em;
-  word-break: break-word;
   flex: 1 0 0;
 }
 
@@ -195,9 +199,11 @@ amm-info@iis.fraunhofer.de
 }
 
 #nga-ui-basic .interactivityitem:has(:focus-visible),
-#nga-ui-basic .interactivityitem:has(.basic-focused) {
-  outline: 3px solid white !important;
+#nga-ui-basic .interactivityitem:has(.basic-focused),
+#nga-ui-basic .button.basic-focused {
   border-color: white !important;
+  outline: 5px solid white !important;
+  outline-offset: -2px;
 }
 
 #nga-ui-basic .presets:has(~ .audioelements .audioelement),
@@ -213,11 +219,17 @@ amm-info@iis.fraunhofer.de
 #nga-ui-basic .presets .reset {
   display: flex;
   align-items: center;
+  justify-content: right;
   margin-left: auto;
+  margin-right: 0;
+  margin-bottom: 0.5em;
   font-weight: 400;
+  min-width: 0;
+  max-width: 40%;
 }
 
 #nga-ui-basic .button {
+  flex-wrap: wrap;
   -webkit-appearance: none;
   appearance: none;
   box-sizing: border-box;
@@ -235,21 +247,14 @@ amm-info@iis.fraunhofer.de
   text-align: left;
 
   cursor: pointer;
-}
-
-#nga-ui-basic input.button.basic-focused {
-  border-color: white !important;
-  outline: 3px solid white !important;
-  outline-offset: 0;
-}
-
-.reset {
-  display: flex;
-  justify-content: right;
-  margin-bottom: 0.5em;
+  white-space: normal;
+  word-break: break-word;
+  max-width: 100%;
+  hyphens: auto;
 }
 
 .header {
   display: flex;
   align-items: center;
+  width: 100%;
 }
